@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>升级版任务 + 倒计时系统</title>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f4f6f8;
+    margin:0;
+    padding:20px;
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+    background:#fff;
+    padding:20px;
+    border-radius:10px;
+}
+
+h1{ text-align:center; }
+
+.row{
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+}
+
+input{
+    padding:8px;
+}
+
+#taskName{ flex:1; }
+
+button{
+    padding:8px 12px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.add{ background:#28a745; color:#fff; }
+
+.task{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:10px;
+    border:1px solid #ddd;
+    margin-bottom:10px;
+    border-radius:8px;
+}
+
+.left{
+    display:flex;
+    gap:15px;
+    align-items:center;
+    flex:1;
+}
+
+.name{
+    font-weight:bold;
+}
+
+.time{
+    width:80px;
+    text-align:center;
+    font-family:monospace;
+}
+
+.start{ background:#007bff; color:#fff; }
+.del{ background:#dc3545; color:#fff; }
+.done{ background:#6c757d; color:#fff; }
+
+.finished .name{
+    text-decoration:line-through;
+    color:#888;
+}
+
+.stats{
+    margin-bottom:15px;
+    padding:10px;
+    background:#eef2f7;
+    border-radius:8px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>任务 + 倒计时系统（升级版）</h1>
+
+<div class="stats">
+总任务：<span id="total">0</span> |
+已完成：<span id="done">0</span>
+</div>
+
+<div class="row">
+    <input id="taskName" placeholder="输入任务">
+    <input id="minutes" type="number" value="25" min="1" style="width:80px;">
+    <button class="add" onclick="addTask()">新增</button>
+</div>
+
+<div id="list"></div>
+
+</div>
+
+<script>
+
+let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+
+function save(){
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    renderStats();
+}
+
+function renderStats(){
+    document.getElementById("total").innerText = tasks.length;
+    document.getElementById("done").innerText = tasks.filter(t=>t.done).length;
+}
+
+function format(s){
+    const m = Math.floor(s/60);
+    const ss = s%60;
+    return String(m).padStart(2,'0')+":"+String(ss).padStart(2,'0');
+}
+
+function addTask(){
+    const name = document.getElementById("taskName").value.trim();
+    const mins = parseInt(document.getElementById("minutes").value);
+
+    if(!name) return alert("请输入任务");
+
+    const task = {
+        id: Date.now(),
+        name,
+        total: mins*60,
+        left: mins*60,
+        running:false,
+        done:false
+    };
+
+    tasks.push(task);
+    save();
+    render();
+
+    document.getElementById("taskName").value="";
+}
+
+function toggle(id){
+    const t = tasks.find(x=>x.id===id);
+    t.running = !t.running;
+    save();
+    render();
+}
+
+function del(id){
+    tasks = tasks.filter(x=>x.id!==id);
+    save();
+    render();
+}
+
+function finish(id){
+    const t = tasks.find(x=>x.id===id);
+    t.done = true;
+    t.running = false;
+    save();
+    render();
+}
+
+function render(){
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+
+    tasks.forEach(t=>{
+
+        const div = document.createElement("div");
+        div.className = "task"+(t.done?" finished":"");
+
+        div.innerHTML = `
+            <div class="left">
+                <div class="name">${t.name}</div>
+                <div class="time">${format(t.left)}</div>
+            </div>
+
+            <div class="right">
+                <button class="start">${t.running?"暂停":"开始"}</button>
+                <button class="done">完成</button>
+                <button class="del">删除</button>
+            </div>
+        `;
+
+        const startBtn = div.querySelector(".start");
+        const delBtn = div.querySelector(".del");
+        const doneBtn = div.querySelector(".done");
+
+        startBtn.onclick = ()=>toggle(t.id);
+        delBtn.onclick = ()=>del(t.id);
+        doneBtn.onclick = ()=>finish(t.id);
+
+        list.appendChild(div);
+    });
+
+    renderStats();
+}
+
+setInterval(()=>{
+
+    tasks.forEach(t=>{
+        if(t.running && !t.done && t.left>0){
+            t.left--;
+            if(t.left<=0){
+                t.left=0;
+                t.running=false;
+                alert("任务完成：" + t.name);
+            }
+        }
+    });
+
+    save();
+    render();
+
+},1000);
+
+render();
+
+</script>
+
+</body>
+</html>
