@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>任务单</title>
+<title>Task V10 Notify版</title>
 
 <style>
 body{
@@ -93,7 +93,7 @@ button{
     padding:5px 8px;
 }
 
-/* ===== 弹窗 ===== */
+/* modal */
 .modal{
     position:fixed;
     top:0;left:0;
@@ -110,20 +110,6 @@ button{
     padding:20px;
     border-radius:12px;
 }
-
-.modal-box input{
-    width:100%;
-    margin-bottom:10px;
-}
-
-.modal-btns{
-    display:flex;
-    gap:10px;
-}
-
-.modal-btns button{
-    flex:1;
-}
 </style>
 </head>
 
@@ -131,7 +117,7 @@ button{
 
 <div class="container">
 
-<h1>博远外贸跟单任务看板</h1>
+<h1>🚀 Task V10 Notify完整版</h1>
 
 <div class="row">
 <input id="name" placeholder="任务名称">
@@ -148,34 +134,60 @@ button{
 
 </div>
 
-<!-- ===== 编辑弹窗 ===== -->
+<!-- 编辑弹窗 -->
 <div id="modal" class="modal">
-    <div class="modal-box">
+<div class="modal-box">
 
-        <h3>编辑任务</h3>
+<h3>编辑任务</h3>
 
-        <input id="editName" placeholder="任务名称">
-        <input id="editTime" type="datetime-local">
+<input id="editName">
+<input id="editTime" type="datetime-local">
 
-        <div class="modal-btns">
-            <button onclick="saveEdit()">保存</button>
-            <button onclick="closeModal()" style="background:#ef4444;">取消</button>
-        </div>
+<button onclick="saveEdit()">保存</button>
+<button onclick="closeModal()" style="background:#ef4444;">取消</button>
 
-    </div>
+</div>
 </div>
 
 <script>
 
+/* ================= DATA ================= */
 let tasks = [];
 let editId = null;
-let currentImgId = null;
+let imgId = null;
 
-/* ================== ADD ================== */
+/* ================= NOTIFY ================= */
+function initNotify(){
+if(Notification.permission !== "granted"){
+Notification.requestPermission();
+}
+}
+
+function notify(title, body){
+if(Notification.permission === "granted"){
+new Notification(title,{
+body:body
+});
+}else{
+alert(body);
+}
+}
+
+/* ================= STORAGE ================= */
+function saveData(){
+localStorage.setItem("tasks_v10_notify", JSON.stringify(tasks));
+}
+
+function loadData(){
+let d = localStorage.getItem("tasks_v10_notify");
+if(d) tasks = JSON.parse(d);
+}
+
+/* ================= ADD ================= */
 function addTask(){
 
-const n = document.getElementById("name").value;
-const t = document.getElementById("time").value;
+const n = name.value;
+const t = time.value;
 
 if(!n || !t) return alert("请填写完整");
 
@@ -186,61 +198,65 @@ time:new Date(t).getTime(),
 status:"todo",
 image:null,
 warn:false,
-endwarn:false
+doneWarn:false
 });
 
+saveData();
 render();
 }
 
-/* ================== EDIT ================== */
+/* ================= EDIT ================= */
 function openEdit(id){
-
 editId = id;
 
 let t = tasks.find(x=>x.id===id);
 
-document.getElementById("editName").value = t.name;
+editName.value = t.name;
 
 let dt = new Date(t.time);
-dt.setMinutes(dt.getMinutes() - dt.getTimezoneOffset());
+dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset());
 
-document.getElementById("editTime").value =
-dt.toISOString().slice(0,16);
+editTime.value = dt.toISOString().slice(0,16);
 
-document.getElementById("modal").style.display="flex";
+modal.style.display="flex";
 }
 
 function saveEdit(){
-
 let t = tasks.find(x=>x.id===editId);
 
-t.name = document.getElementById("editName").value;
-t.time = new Date(document.getElementById("editTime").value).getTime();
+t.name = editName.value;
+t.time = new Date(editTime.value).getTime();
 
-closeModal();
+saveData();
 render();
+closeModal();
 }
 
 function closeModal(){
-document.getElementById("modal").style.display="none";
+modal.style.display="none";
 editId=null;
 }
 
-/* ================== IMAGE ================== */
-file.onchange = e=>{
+/* ================= DELETE ================= */
+function del(id){
+tasks = tasks.filter(t=>t.id!==id);
+saveData();
+render();
+}
 
+/* ================= IMAGE ================= */
+file.onchange = e=>{
 let f = e.target.files[0];
 
-let reader = new FileReader();
+let r = new FileReader();
 
-reader.onload = ev=>{
-
+r.onload = ev=>{
 let img = new Image();
 
 img.onload = ()=>{
 
-let c = document.createElement("canvas");
-let ctx = c.getContext("2d");
+let c=document.createElement("canvas");
+let ctx=c.getContext("2d");
 
 let w=img.width,h=img.height,m=300;
 
@@ -252,30 +268,25 @@ ctx.drawImage(img,0,0,w,h);
 
 let base = c.toDataURL("image/jpeg",0.7);
 
-let t = tasks.find(x=>x.id===currentImgId);
+let t = tasks.find(x=>x.id===imgId);
 t.image = base;
 
+saveData();
 render();
 };
 
 img.src = ev.target.result;
 };
 
-reader.readAsDataURL(f);
+r.readAsDataURL(f);
 };
 
 function uploadImg(id){
-currentImgId = id;
+imgId = id;
 file.click();
 }
 
-/* ================== DELETE ================== */
-function del(id){
-tasks = tasks.filter(t=>t.id!==id);
-render();
-}
-
-/* ================== TIME ================== */
+/* ================= TIME ================= */
 function format(ms){
 if(ms<=0)return "已结束";
 
@@ -295,7 +306,31 @@ if(d<=2)return"yellow";
 return"blue";
 }
 
-/* ================== RENDER ================== */
+/* ================= REMINDER ================= */
+function check(){
+
+let now = Date.now();
+
+tasks.forEach(t=>{
+
+let diff = t.time - now;
+
+if(diff<=0 && !t.doneWarn){
+notify("任务到期", t.name);
+t.doneWarn = true;
+}
+
+if(diff<=86400000 && !t.warn){
+notify("24小时提醒", t.name);
+t.warn = true;
+}
+
+});
+
+saveData();
+}
+
+/* ================= RENDER ================= */
 function render(){
 
 todo.innerHTML="<h3>待办</h3>";
@@ -327,8 +362,16 @@ document.getElementById(t.status).appendChild(div);
 });
 }
 
-/* ================== LOOP ================== */
-setInterval(render,1000);
+/* ================= LOOP ================= */
+setInterval(()=>{
+render();
+check();
+},1000);
+
+/* ================= INIT ================= */
+loadData();
+initNotify();
+render();
 
 </script>
 
