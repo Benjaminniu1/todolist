@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>升级版任务 + 倒计时系统</title>
+<title>任务系统 V6.1（稳定修复版）</title>
 
 <style>
 body{
@@ -14,14 +14,14 @@ body{
 }
 
 .container{
-    max-width:900px;
+    max-width:1100px;
     margin:auto;
     background:#fff;
     padding:20px;
-    border-radius:10px;
+    border-radius:12px;
 }
 
-h1{ text-align:center; }
+h1{text-align:center;}
 
 .row{
     display:flex;
@@ -29,63 +29,66 @@ h1{ text-align:center; }
     margin-bottom:15px;
 }
 
-input{
-    padding:8px;
-}
+input,button{padding:8px;}
 
-#taskName{ flex:1; }
+#taskName{flex:1;}
 
 button{
-    padding:8px 12px;
     border:none;
     border-radius:6px;
     cursor:pointer;
 }
 
-.add{ background:#28a745; color:#fff; }
+.add{background:#28a745;color:#fff;}
 
-.task{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
+.stats{
+    background:#eef2f7;
     padding:10px;
-    border:1px solid #ddd;
-    margin-bottom:10px;
     border-radius:8px;
+    margin-bottom:10px;
 }
 
-.left{
-    display:flex;
-    gap:15px;
-    align-items:center;
-    flex:1;
+/* 看板 */
+.board{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+}
+
+.col{
+    background:#f8f9fa;
+    border-radius:10px;
+    padding:10px;
+    min-height:300px;
+}
+
+.task{
+    background:#fff;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:10px;
+    margin-bottom:8px;
+    cursor:grab;
 }
 
 .name{
     font-weight:bold;
 }
 
-.time{
-    width:80px;
-    text-align:center;
+.timer{
     font-family:monospace;
+    font-size:13px;
 }
 
-.start{ background:#007bff; color:#fff; }
-.del{ background:#dc3545; color:#fff; }
-.done{ background:#6c757d; color:#fff; }
-
-.finished .name{
-    text-decoration:line-through;
-    color:#888;
+.btns{
+    display:flex;
+    gap:5px;
+    margin-top:5px;
 }
 
-.stats{
-    margin-bottom:15px;
-    padding:10px;
-    background:#eef2f7;
-    border-radius:8px;
-}
+.start{background:#007bff;color:#fff;}
+.edit{background:#ff9800;color:#fff;}
+.del{background:#dc3545;color:#fff;}
 </style>
 </head>
 
@@ -93,141 +96,262 @@ button{
 
 <div class="container">
 
-<h1>任务 + 倒计时系统（升级版）</h1>
+<h1>📊 任务系统 V6.1（稳定版）</h1>
 
 <div class="stats">
-总任务：<span id="total">0</span> |
-已完成：<span id="done">0</span>
+今日专注：<span id="focus">0</span> 秒 |
+任务数：<span id="total">0</span>
 </div>
 
 <div class="row">
-    <input id="taskName" placeholder="输入任务">
-    <input id="minutes" type="number" value="25" min="1" style="width:80px;">
-    <button class="add" onclick="addTask()">新增</button>
+    <input id="taskName" placeholder="任务名称">
+    <input type="datetime-local" id="deadline">
+    <button class="add" onclick="addTask()">新增任务</button>
 </div>
 
-<div id="list"></div>
+<div class="board">
+    <div class="col" id="todo" ondrop="drop(event,'todo')" ondragover="allow(event)">
+        <h3>待办</h3>
+    </div>
+
+    <div class="col" id="doing" ondrop="drop(event,'doing')" ondragover="allow(event)">
+        <h3>进行中</h3>
+    </div>
+
+    <div class="col" id="done" ondrop="drop(event,'done')" ondragover="allow(event)">
+        <h3>已完成</h3>
+    </div>
+</div>
 
 </div>
 
 <script>
 
-let tasks = JSON.parse(localStorage.getItem("tasks") || "[]");
+let tasks = JSON.parse(localStorage.getItem("tasks_v61") || "[]");
+let focusTime = parseInt(localStorage.getItem("focus_v61") || "0");
 
+/* 保存 */
 function save(){
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-    renderStats();
-}
-
-function renderStats(){
+    localStorage.setItem("tasks_v61", JSON.stringify(tasks));
+    localStorage.setItem("focus_v61", focusTime);
+    document.getElementById("focus").innerText = focusTime;
     document.getElementById("total").innerText = tasks.length;
-    document.getElementById("done").innerText = tasks.filter(t=>t.done).length;
 }
 
-function format(s){
-    const m = Math.floor(s/60);
-    const ss = s%60;
-    return String(m).padStart(2,'0')+":"+String(ss).padStart(2,'0');
-}
-
+/* 新增 */
 function addTask(){
     const name = document.getElementById("taskName").value.trim();
-    const mins = parseInt(document.getElementById("minutes").value);
+    const deadline = document.getElementById("deadline").value;
 
     if(!name) return alert("请输入任务");
+    if(!deadline) return alert("请选择时间");
 
-    const task = {
+    tasks.push({
         id: Date.now(),
         name,
-        total: mins*60,
-        left: mins*60,
-        running:false,
-        done:false
-    };
-
-    tasks.push(task);
-    save();
-    render();
+        endTime: new Date(deadline).getTime(),
+        status: "todo",
+        running: false
+    });
 
     document.getElementById("taskName").value="";
+    save();
+    renderAll();
 }
 
+/* 删除 */
+function del(id){
+    tasks = tasks.filter(t=>t.id!==id);
+    save();
+    renderAll();
+}
+
+/* 开始/暂停 */
 function toggle(id){
     const t = tasks.find(x=>x.id===id);
+    if(!t) return;
     t.running = !t.running;
     save();
-    render();
+    renderAll();
 }
 
-function del(id){
-    tasks = tasks.filter(x=>x.id!==id);
-    save();
-    render();
+/* 修改 */
+function edit(id){
+    const t = tasks.find(x => x.id === id);
+    if(!t) return;
+
+    // 创建遮罩层（不改你原UI，只是临时弹窗）
+    const mask = document.createElement("div");
+    mask.style.position = "fixed";
+    mask.style.top = "0";
+    mask.style.left = "0";
+    mask.style.right = "0";
+    mask.style.bottom = "0";
+    mask.style.background = "rgba(0,0,0,0.4)";
+    mask.style.display = "flex";
+    mask.style.alignItems = "center";
+    mask.style.justifyContent = "center";
+    mask.style.zIndex = "9999";
+
+    // 当前时间格式化为 datetime-local
+    const localTime = new Date(t.endTime);
+    const formatted = localTime.toISOString().slice(0,16);
+
+    mask.innerHTML = `
+        <div style="
+            background:#fff;
+            padding:20px;
+            border-radius:10px;
+            width:300px;
+        ">
+            <h3>修改任务</h3>
+
+            <input id="editName" style="width:100%;margin-bottom:10px;padding:6px;"
+                value="${t.name}">
+
+            <input id="editTime" type="datetime-local"
+                style="width:100%;margin-bottom:10px;padding:6px;"
+                value="${formatted}">
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button id="cancelBtn">取消</button>
+                <button id="saveBtn" style="background:#28a745;color:#fff;">保存</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(mask);
+
+    // 取消
+    mask.querySelector("#cancelBtn").onclick = () => {
+        document.body.removeChild(mask);
+    };
+
+    // 保存
+    mask.querySelector("#saveBtn").onclick = () => {
+
+        const newName = mask.querySelector("#editName").value.trim();
+        const newTime = mask.querySelector("#editTime").value;
+
+        if(!newName || !newTime){
+            alert("不能为空");
+            return;
+        }
+
+        t.name = newName;
+        t.endTime = new Date(newTime).getTime();
+
+        save();
+        renderAll(); // ⚠️ 你V6.1版本用这个
+        document.body.removeChild(mask);
+    };
 }
 
-function finish(id){
+/* 状态 */
+function setStatus(id,status){
     const t = tasks.find(x=>x.id===id);
-    t.done = true;
-    t.running = false;
+    if(!t) return;
+
+    t.status = status;
+    if(status==="done") t.running=false;
+
     save();
-    render();
+    renderAll();
 }
 
-function render(){
-    const list = document.getElementById("list");
-    list.innerHTML = "";
+/* 拖拽 */
+function allow(e){ e.preventDefault(); }
+
+function drag(e){
+    e.dataTransfer.setData("id", e.target.dataset.id);
+}
+
+function drop(e,status){
+    const id = e.dataTransfer.getData("id");
+    setStatus(Number(id), status);
+}
+
+/* 时间 */
+function format(ms){
+    if(ms<=0) return "已结束";
+
+    let s=Math.floor(ms/1000);
+    const d=Math.floor(s/86400); s%=86400;
+    const h=Math.floor(s/3600); s%=3600;
+    const m=Math.floor(s/60);
+    const sec=s%60;
+
+    return (d?d+"天":"")+(h?h+"小时":"")+(m?m+"分":"")+sec+"秒";
+}
+
+/* ====== ⭐关键优化：只渲染一次结构 ====== */
+function renderAll(){
+
+    ["todo","doing","done"].forEach(id=>{
+        const col = document.getElementById(id);
+        col.innerHTML = `<h3>${col.querySelector("h3").innerText}</h3>`;
+    });
 
     tasks.forEach(t=>{
-
         const div = document.createElement("div");
-        div.className = "task"+(t.done?" finished":"");
+        div.className="task";
+        div.dataset.id=t.id;
+        div.draggable=true;
+        div.ondragstart=drag;
 
-        div.innerHTML = `
-            <div class="left">
-                <div class="name">${t.name}</div>
-                <div class="time">${format(t.left)}</div>
+        div.innerHTML=`
+            <div class="name">${t.name}</div>
+            <div class="timer" id="timer-${t.id}">
+                ${format(t.endTime-Date.now())}
+                ${t.running?"（专注中）":""}
             </div>
 
-            <div class="right">
+            <div class="btns">
                 <button class="start">${t.running?"暂停":"开始"}</button>
-                <button class="done">完成</button>
+                <button class="edit">修改</button>
                 <button class="del">删除</button>
             </div>
         `;
 
-        const startBtn = div.querySelector(".start");
-        const delBtn = div.querySelector(".del");
-        const doneBtn = div.querySelector(".done");
+        div.querySelector(".start").onclick=()=>toggle(t.id);
+        div.querySelector(".edit").onclick=()=>edit(t.id);
+        div.querySelector(".del").onclick=()=>del(t.id);
 
-        startBtn.onclick = ()=>toggle(t.id);
-        delBtn.onclick = ()=>del(t.id);
-        doneBtn.onclick = ()=>finish(t.id);
-
-        list.appendChild(div);
+        document.getElementById(t.status).appendChild(div);
     });
 
-    renderStats();
+    save();
 }
 
-setInterval(()=>{
+/* ====== ⭐只更新时间（不重绘DOM） ====== */
+function updateTime(){
 
     tasks.forEach(t=>{
-        if(t.running && !t.done && t.left>0){
-            t.left--;
-            if(t.left<=0){
-                t.left=0;
-                t.running=false;
-                alert("任务完成：" + t.name);
-            }
+        const el = document.getElementById(`timer-${t.id}`);
+        if(!el) return;
+
+        const remain = t.endTime - Date.now();
+
+        el.innerText =
+            format(remain) + (t.running ? "（专注中）" : "");
+
+        if(t.running && t.status !== "done"){
+            focusTime++;
+        }
+
+        if(remain<=0){
+            t.running=false;
+            t.status="done";
         }
     });
 
     save();
-    render();
+}
 
-},1000);
+setInterval(updateTime,1000);
 
-render();
+renderAll();
+save();
 
 </script>
 
