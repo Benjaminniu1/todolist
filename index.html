@@ -2,113 +2,42 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>任务单</title>
+<title>V11 FULL Task System</title>
 
 <style>
-body{
-    font-family:Arial;
-    background:#eef2f7;
-    margin:0;
-    padding:20px;
-}
+body{font-family:Arial;background:#eef2f7;margin:0;padding:20px;}
+.container{max-width:1200px;margin:auto;background:#fff;padding:20px;border-radius:14px;}
 
-.container{
-    max-width:1200px;
-    margin:auto;
-    background:#fff;
-    padding:20px;
-    border-radius:14px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.08);
-}
+.row{display:flex;gap:10px;margin-bottom:15px;}
+input,button{padding:10px;border-radius:8px;border:1px solid #ddd;}
 
-h1{text-align:center;}
+button{background:#3b82f6;color:#fff;border:none;cursor:pointer;}
 
-.row{
-    display:flex;
-    gap:10px;
-    margin-bottom:15px;
-}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
 
-input,button{
-    padding:10px;
-    border-radius:8px;
-    border:1px solid #ddd;
-}
+.col{background:#f8fafc;padding:10px;border-radius:10px;min-height:300px;}
 
-button{
-    background:#3b82f6;
-    color:#fff;
-    border:none;
-    cursor:pointer;
-}
+.task{background:#fff;border:1px solid #ddd;padding:10px;margin-bottom:8px;border-radius:10px;}
 
-.board{
-    display:grid;
-    grid-template-columns:repeat(3,1fr);
-    gap:10px;
-}
+.task img{width:45px;height:45px;object-fit:cover;border-radius:6px;cursor:pointer;}
 
-.col{
-    background:#f8fafc;
-    padding:10px;
-    border-radius:12px;
-    min-height:300px;
-}
-
-.task{
-    background:#fff;
-    border:1px solid #ddd;
-    padding:10px;
-    margin-bottom:8px;
-    border-radius:10px;
-}
-
-.task img{
-    width:45px;
-    height:45px;
-    object-fit:cover;
-    border-radius:6px;
-    cursor:pointer;
-}
-
-.timer{
-    font-family:monospace;
-    padding:4px 6px;
-    border-radius:6px;
-    display:inline-block;
-}
+.timer{font-family:monospace;padding:4px 6px;border-radius:6px;display:inline-block;}
 
 .red{background:#ffe4e6;color:#be123c;}
 .yellow{background:#fef9c3;color:#854d0e;}
 .blue{background:#dbeafe;color:#1d4ed8;}
 
-.actions{
-    margin-top:8px;
-    display:flex;
-    gap:6px;
-}
-
-.actions button{
-    font-size:12px;
-    padding:5px 8px;
-}
+.actions button{font-size:12px;margin-right:5px;}
 
 /* modal */
 .modal{
-    position:fixed;
-    top:0;left:0;
-    width:100%;height:100%;
-    background:rgba(0,0,0,0.6);
-    display:none;
-    justify-content:center;
-    align-items:center;
+position:fixed;top:0;left:0;width:100%;height:100%;
+background:rgba(0,0,0,.6);
+display:none;justify-content:center;align-items:center;
 }
 
 .modal-box{
-    width:320px;
-    background:#fff;
-    padding:20px;
-    border-radius:12px;
+background:#fff;padding:20px;border-radius:10px;width:320px;
 }
 </style>
 </head>
@@ -117,13 +46,13 @@ button{
 
 <div class="container">
 
-<h1>博远外贸跟单任务看板</h1>
+<h1>🚀 V11 FULL（完整功能版）</h1>
 
 <div class="row">
-<input id="name" placeholder="任务名称">
-<input id="time" type="datetime-local">
-<button onclick="addTask()">新增</button>
-<input type="file" id="file" accept="image/*" hidden>
+<input id="taskName" placeholder="任务名称">
+<input id="taskTime" type="datetime-local">
+<button onclick="App.add()">新增</button>
+<input type="file" id="imgInput" accept="image/*" hidden>
 </div>
 
 <div class="board">
@@ -134,126 +63,121 @@ button{
 
 </div>
 
-<!-- 编辑弹窗 -->
+<!-- MODAL -->
 <div id="modal" class="modal">
 <div class="modal-box">
-
 <h3>编辑任务</h3>
 
 <input id="editName">
 <input id="editTime" type="datetime-local">
 
-<button onclick="saveEdit()">保存</button>
-<button onclick="closeModal()" style="background:#ef4444;">取消</button>
-
+<button onclick="App.saveEdit()">保存</button>
+<button onclick="UI.close()">取消</button>
 </div>
 </div>
 
 <script>
 
-/* ================= DATA ================= */
-let tasks = [];
-let editId = null;
-let imgId = null;
+/* ================= STORE ================= */
+const Store = {
+tasks:[],
+editId:null,
+imgId:null
+};
+
+/* ================= DB ================= */
+const DB = {
+save(){localStorage.setItem("v11_full",JSON.stringify(Store.tasks));},
+load(){
+let d=localStorage.getItem("v11_full");
+Store.tasks=d?JSON.parse(d):[];
+}
+};
 
 /* ================= NOTIFY ================= */
-function initNotify(){
-if(Notification.permission !== "granted"){
+function notify(title,body){
+if(Notification.permission==="granted"){
+new Notification(title,{body});
+}
+}
+
+if(Notification.permission!=="granted"){
 Notification.requestPermission();
 }
-}
 
-function notify(title, body){
-if(Notification.permission === "granted"){
-new Notification(title,{
-body:body
-});
-}else{
-alert(body);
-}
-}
+/* ================= APP ================= */
+const App = {
 
-/* ================= STORAGE ================= */
-function saveData(){
-localStorage.setItem("tasks_v10_notify", JSON.stringify(tasks));
-}
+/* ADD */
+add(){
+const n=document.getElementById("taskName").value.trim();
+const t=document.getElementById("taskTime").value;
 
-function loadData(){
-let d = localStorage.getItem("tasks_v10_notify");
-if(d) tasks = JSON.parse(d);
-}
+if(!n||!t)return alert("请填写完整");
 
-/* ================= ADD ================= */
-function addTask(){
-
-const n = name.value;
-const t = time.value;
-
-if(!n || !t) return alert("请填写完整");
-
-tasks.push({
+Store.tasks.push({
 id:Date.now(),
 name:n,
 time:new Date(t).getTime(),
 status:"todo",
 image:null,
 warn:false,
-doneWarn:false
+done:false
 });
 
-saveData();
-render();
-}
+DB.save();
+UI.render();
+},
 
-/* ================= EDIT ================= */
-function openEdit(id){
-editId = id;
+/* EDIT */
+openEdit(id){
+Store.editId=id;
+let t=Store.tasks.find(x=>x.id===id);
 
-let t = tasks.find(x=>x.id===id);
+editName.value=t.name;
 
-editName.value = t.name;
-
-let dt = new Date(t.time);
+let dt=new Date(t.time);
 dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset());
 
-editTime.value = dt.toISOString().slice(0,16);
+editTime.value=dt.toISOString().slice(0,16);
 
-modal.style.display="flex";
+UI.open();
+},
+
+saveEdit(){
+let t=Store.tasks.find(x=>x.id===Store.editId);
+
+t.name=editName.value.trim();
+t.time=new Date(editTime.value).getTime();
+
+DB.save();
+UI.render();
+UI.close();
+},
+
+/* DELETE */
+del(id){
+Store.tasks=Store.tasks.filter(x=>x.id!==id);
+DB.save();
+UI.render();
+},
+
+/* IMAGE */
+img(id){
+Store.imgId=id;
+imgInput.click();
 }
-
-function saveEdit(){
-let t = tasks.find(x=>x.id===editId);
-
-t.name = editName.value;
-t.time = new Date(editTime.value).getTime();
-
-saveData();
-render();
-closeModal();
-}
-
-function closeModal(){
-modal.style.display="none";
-editId=null;
-}
-
-/* ================= DELETE ================= */
-function del(id){
-tasks = tasks.filter(t=>t.id!==id);
-saveData();
-render();
-}
+};
 
 /* ================= IMAGE ================= */
-file.onchange = e=>{
-let f = e.target.files[0];
+imgInput.onchange=e=>{
+let f=e.target.files[0];
+let r=new FileReader();
 
-let r = new FileReader();
+r.onload=ev=>{
+let img=new Image();
 
-r.onload = ev=>{
-let img = new Image();
-
-img.onload = ()=>{
+img.onload=()=>{
 
 let c=document.createElement("canvas");
 let ctx=c.getContext("2d");
@@ -266,29 +190,69 @@ else{if(h>m){w*=m/h;h=m;}}
 c.width=w;c.height=h;
 ctx.drawImage(img,0,0,w,h);
 
-let base = c.toDataURL("image/jpeg",0.7);
+let base=c.toDataURL("image/jpeg",0.7);
 
-let t = tasks.find(x=>x.id===imgId);
-t.image = base;
+let t=Store.tasks.find(x=>x.id===Store.imgId);
+t.image=base;
 
-saveData();
-render();
+DB.save();
+UI.render();
 };
 
-img.src = ev.target.result;
+img.src=ev.target.result;
 };
 
 r.readAsDataURL(f);
 };
 
-function uploadImg(id){
-imgId = id;
-file.click();
+/* ================= UI ================= */
+const UI = {
+
+render(){
+
+todo.innerHTML="<h3>待办</h3>";
+doing.innerHTML="<h3>进行中</h3>";
+done.innerHTML="<h3>已完成</h3>";
+
+let now=Date.now();
+
+Store.tasks.forEach(t=>{
+
+let diff=t.time-now;
+
+if(diff<=0 && !t.done){
+notify("任务到期",t.name);
+t.done=true;
+DB.save();
 }
+
+let div=document.createElement("div");
+div.className="task";
+
+div.innerHTML=`
+${t.image?`<img src="${t.image}" onclick="App.img(${t.id})">`:''}
+<div><b>${t.name}</b></div>
+
+<div class="timer ${color(diff)}">${format(diff)}</div>
+
+<div class="actions">
+<button onclick="App.openEdit(${t.id})">修改</button>
+<button onclick="App.del(${t.id})">删除</button>
+<button onclick="App.img(${t.id})">图片</button>
+</div>
+`;
+
+document.getElementById(t.status).appendChild(div);
+});
+},
+
+open(){modal.style.display="flex";},
+close(){modal.style.display="none";}
+};
 
 /* ================= TIME ================= */
 function format(ms){
-if(ms<=0)return "已结束";
+if(ms<=0)return"已结束";
 
 let s=ms/1000;
 let d=Math.floor(s/86400);s%=86400;
@@ -306,72 +270,12 @@ if(d<=2)return"yellow";
 return"blue";
 }
 
-/* ================= REMINDER ================= */
-function check(){
-
-let now = Date.now();
-
-tasks.forEach(t=>{
-
-let diff = t.time - now;
-
-if(diff<=0 && !t.doneWarn){
-notify("任务到期", t.name);
-t.doneWarn = true;
-}
-
-if(diff<=86400000 && !t.warn){
-notify("24小时提醒", t.name);
-t.warn = true;
-}
-
-});
-
-saveData();
-}
-
-/* ================= RENDER ================= */
-function render(){
-
-todo.innerHTML="<h3>待办</h3>";
-doing.innerHTML="<h3>进行中</h3>";
-done.innerHTML="<h3>已完成</h3>";
-
-let now = Date.now();
-
-tasks.forEach(t=>{
-
-let diff = t.time - now;
-
-let div = document.createElement("div");
-div.className="task";
-
-div.innerHTML=`
-${t.image?`<img src="${t.image}" onclick="uploadImg(${t.id})">`:''}
-<div><b>${t.name}</b></div>
-<div class="timer ${color(diff)}">${format(diff)}</div>
-
-<div class="actions">
-<button onclick="uploadImg(${t.id})">图片</button>
-<button onclick="openEdit(${t.id})">修改</button>
-<button onclick="del(${t.id})">删除</button>
-</div>
-`;
-
-document.getElementById(t.status).appendChild(div);
-});
-}
-
 /* ================= LOOP ================= */
-setInterval(()=>{
-render();
-check();
-},1000);
+setInterval(()=>UI.render(),1000);
 
 /* ================= INIT ================= */
-loadData();
-initNotify();
-render();
+DB.load();
+UI.render();
 
 </script>
 
