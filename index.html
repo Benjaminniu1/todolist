@@ -194,22 +194,75 @@ function del(id){
 
 /* 修改 */
 function edit(id){
-    const t = tasks.find(x=>x.id===id);
+    const t = tasks.find(x => x.id === id);
     if(!t) return;
 
-    const name = prompt("修改任务名称", t.name);
-    const time = prompt("修改时间", new Date(t.endTime).toISOString().slice(0,16));
+    // 当前时间转 datetime-local 格式
+    const dt = new Date(t.endTime);
+    const local = new Date(dt.getTime() - dt.getTimezoneOffset()*60000)
+        .toISOString().slice(0,16);
 
-    if(!name || !time) return;
+    // 创建遮罩弹窗（不破坏UI）
+    const mask = document.createElement("div");
+    mask.style.position = "fixed";
+    mask.style.top = "0";
+    mask.style.left = "0";
+    mask.style.width = "100%";
+    mask.style.height = "100%";
+    mask.style.background = "rgba(0,0,0,0.4)";
+    mask.style.display = "flex";
+    mask.style.alignItems = "center";
+    mask.style.justifyContent = "center";
+    mask.style.zIndex = "9999";
 
-    t.name = name;
-    t.endTime = new Date(time).getTime();
+    mask.innerHTML = `
+        <div style="
+            background:#fff;
+            padding:20px;
+            border-radius:10px;
+            width:320px;
+        ">
+            <h3 style="margin-top:0;">修改任务</h3>
 
-    /* 修改后清除提醒状态 */
-    delete notified[id];
+            <input id="editName" style="width:100%;padding:8px;margin-bottom:10px;"
+                value="${t.name}">
 
-    save();
-    render();
+            <input id="editTime" type="datetime-local"
+                style="width:100%;padding:8px;margin-bottom:10px;"
+                value="${local}">
+
+            <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button id="cancelBtn">取消</button>
+                <button id="saveBtn" style="background:#28a745;color:#fff;">保存</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(mask);
+
+    // 取消
+    mask.querySelector("#cancelBtn").onclick = () => {
+        document.body.removeChild(mask);
+    };
+
+    // 保存
+    mask.querySelector("#saveBtn").onclick = () => {
+
+        const newName = mask.querySelector("#editName").value.trim();
+        const newTime = mask.querySelector("#editTime").value;
+
+        if(!newName || !newTime){
+            alert("任务名和时间不能为空");
+            return;
+        }
+
+        t.name = newName;
+        t.endTime = new Date(newTime).getTime();
+
+        save();
+        render(); // 或 renderAll()
+        document.body.removeChild(mask);
+    };
 }
 
 /* 状态 */
