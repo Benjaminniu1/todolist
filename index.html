@@ -2,11 +2,11 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>任务单</title>
+<title>V12 云同步任务系统</title>
 
 <style>
 body{font-family:Arial;background:#eef2f7;margin:0;padding:20px;}
-.container{max-width:1200px;margin:auto;background:#fff;padding:20px;border-radius:14px;}
+.container{max-width:1100px;margin:auto;background:#fff;padding:20px;border-radius:12px;}
 
 .row{display:flex;gap:10px;margin-bottom:15px;}
 input,button{padding:10px;border-radius:8px;border:1px solid #ddd;}
@@ -19,26 +19,13 @@ button{background:#3b82f6;color:#fff;border:none;cursor:pointer;}
 
 .task{background:#fff;border:1px solid #ddd;padding:10px;margin-bottom:8px;border-radius:10px;}
 
-.task img{width:45px;height:45px;object-fit:cover;border-radius:6px;cursor:pointer;}
-
 .timer{font-family:monospace;padding:4px 6px;border-radius:6px;display:inline-block;}
 
-.red{background:#ffe4e6;color:#be123c;}
-.yellow{background:#fef9c3;color:#854d0e;}
-.blue{background:#dbeafe;color:#1d4ed8;}
+.red{background:#ffe4e6;}
+.yellow{background:#fef9c3;}
+.blue{background:#dbeafe;}
 
 .actions button{font-size:12px;margin-right:5px;}
-
-/* modal */
-.modal{
-position:fixed;top:0;left:0;width:100%;height:100%;
-background:rgba(0,0,0,.6);
-display:none;justify-content:center;align-items:center;
-}
-
-.modal-box{
-background:#fff;padding:20px;border-radius:10px;width:320px;
-}
 </style>
 </head>
 
@@ -46,13 +33,12 @@ background:#fff;padding:20px;border-radius:10px;width:320px;
 
 <div class="container">
 
-<h1>博远外贸跟单任务看板</h1>
+<h1>🚀 V12 云同步版（Supabase）</h1>
 
 <div class="row">
-<input id="taskName" placeholder="任务名称">
-<input id="taskTime" type="datetime-local">
+<input id="name" placeholder="任务名称">
+<input id="time" type="datetime-local">
 <button onclick="App.add()">新增</button>
-<input type="file" id="imgInput" accept="image/*" hidden>
 </div>
 
 <div class="board">
@@ -63,59 +49,51 @@ background:#fff;padding:20px;border-radius:10px;width:320px;
 
 </div>
 
-<!-- MODAL -->
-<div id="modal" class="modal">
-<div class="modal-box">
+<!-- modal -->
+<div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);justify-content:center;align-items:center;">
+<div style="background:#fff;padding:20px;width:300px;border-radius:10px;">
 <h3>编辑任务</h3>
-
-<input id="editName">
-<input id="editTime" type="datetime-local">
-
+<input id="editName"><br><br>
+<input id="editTime" type="datetime-local"><br><br>
 <button onclick="App.saveEdit()">保存</button>
 <button onclick="UI.close()">取消</button>
 </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
 <script>
 
-/* ================= STORE ================= */
+/* ================= SUPABASE ================= */
+const supabase = window.supabase.createClient(
+"SUPABASE_URL",
+"SUPABASE_KEY"
+);
+
+/* ================= STATE ================= */
 const Store = {
 tasks:[],
-editId:null,
-imgId:null
+editId:null
 };
 
-/* ================= DB ================= */
-const DB = {
-save(){localStorage.setItem("v11_full",JSON.stringify(Store.tasks));},
-load(){
-let d=localStorage.getItem("v11_full");
-Store.tasks=d?JSON.parse(d):[];
-}
-};
-
-/* ================= NOTIFY ================= */
-function notify(title,body){
-if(Notification.permission==="granted"){
-new Notification(title,{body});
-}
-}
-
-if(Notification.permission!=="granted"){
-Notification.requestPermission();
+/* ================= LOAD ================= */
+async function load(){
+let {data} = await supabase.from("tasks").select("*");
+Store.tasks = data || [];
+UI.render();
 }
 
 /* ================= APP ================= */
 const App = {
 
-/* ADD */
-add(){
-const n=document.getElementById("taskName").value.trim();
-const t=document.getElementById("taskTime").value;
+async add(){
+
+const n = document.getElementById("name").value.trim();
+const t = document.getElementById("time").value;
 
 if(!n||!t)return alert("请填写完整");
 
-Store.tasks.push({
+let task = {
 id:Date.now(),
 name:n,
 time:new Date(t).getTime(),
@@ -123,86 +101,44 @@ status:"todo",
 image:null,
 warn:false,
 done:false
-});
+};
 
-DB.save();
-UI.render();
+await supabase.from("tasks").insert([task]);
+
+await load();
 },
 
-/* EDIT */
 openEdit(id){
 Store.editId=id;
 let t=Store.tasks.find(x=>x.id===id);
 
 editName.value=t.name;
-
 let dt=new Date(t.time);
 dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset());
-
 editTime.value=dt.toISOString().slice(0,16);
 
-UI.open();
+modal.style.display="flex";
 },
 
-saveEdit(){
+async saveEdit(){
+
 let t=Store.tasks.find(x=>x.id===Store.editId);
 
-t.name=editName.value.trim();
-t.time=new Date(editTime.value).getTime();
+await supabase.from("tasks")
+.update({
+name:editName.value,
+time:new Date(editTime.value).getTime()
+})
+.eq("id",Store.editId);
 
-DB.save();
-UI.render();
-UI.close();
+modal.style.display="none";
+await load();
 },
 
-/* DELETE */
-del(id){
-Store.tasks=Store.tasks.filter(x=>x.id!==id);
-DB.save();
-UI.render();
-},
-
-/* IMAGE */
-img(id){
-Store.imgId=id;
-imgInput.click();
+async del(id){
+await supabase.from("tasks").delete().eq("id",id);
+await load();
 }
-};
-
-/* ================= IMAGE ================= */
-imgInput.onchange=e=>{
-let f=e.target.files[0];
-let r=new FileReader();
-
-r.onload=ev=>{
-let img=new Image();
-
-img.onload=()=>{
-
-let c=document.createElement("canvas");
-let ctx=c.getContext("2d");
-
-let w=img.width,h=img.height,m=300;
-
-if(w>h){if(w>m){h*=m/w;w=m;}}
-else{if(h>m){w*=m/h;h=m;}}
-
-c.width=w;c.height=h;
-ctx.drawImage(img,0,0,w,h);
-
-let base=c.toDataURL("image/jpeg",0.7);
-
-let t=Store.tasks.find(x=>x.id===Store.imgId);
-t.image=base;
-
-DB.save();
-UI.render();
-};
-
-img.src=ev.target.result;
-};
-
-r.readAsDataURL(f);
 };
 
 /* ================= UI ================= */
@@ -220,25 +156,16 @@ Store.tasks.forEach(t=>{
 
 let diff=t.time-now;
 
-if(diff<=0 && !t.done){
-notify("任务到期",t.name);
-t.done=true;
-DB.save();
-}
-
 let div=document.createElement("div");
 div.className="task";
 
 div.innerHTML=`
-${t.image?`<img src="${t.image}" onclick="App.img(${t.id})">`:''}
 <div><b>${t.name}</b></div>
-
-<div class="timer ${color(diff)}">${format(diff)}</div>
+<div class="timer">${format(diff)}</div>
 
 <div class="actions">
 <button onclick="App.openEdit(${t.id})">修改</button>
 <button onclick="App.del(${t.id})">删除</button>
-<button onclick="App.img(${t.id})">图片</button>
 </div>
 `;
 
@@ -246,8 +173,9 @@ document.getElementById(t.status).appendChild(div);
 });
 },
 
-open(){modal.style.display="flex";},
-close(){modal.style.display="none";}
+close(){
+modal.style.display="none";
+}
 };
 
 /* ================= TIME ================= */
@@ -263,19 +191,11 @@ let sec=Math.floor(s%60);
 return (d?d+"天":"")+(h?h+"小时":"")+(m?m+"分":"")+sec+"秒";
 }
 
-function color(ms){
-let d=ms/86400000;
-if(d<1)return"red";
-if(d<=2)return"yellow";
-return"blue";
-}
-
 /* ================= LOOP ================= */
 setInterval(()=>UI.render(),1000);
 
 /* ================= INIT ================= */
-DB.load();
-UI.render();
+load();
 
 </script>
 
