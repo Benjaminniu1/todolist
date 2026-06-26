@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+    <link rel="manifest" href="/todolist/manifest.json" />
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>博远跟单看板 · 最终版</title>
@@ -575,5 +579,12 @@ window.loadTasks = loadTasks;
 window.openImageModal = openImageModal;
 window.closeImageModal = closeImageModal;
 </script>
+    <script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/todolist/sw.js')
+    .then(reg => console.log('✅ Service Worker 注册成功', reg))
+    .catch(err => console.error('❌ Service Worker 注册失败', err));
+}
+    </script>
 </body>
 </html>
