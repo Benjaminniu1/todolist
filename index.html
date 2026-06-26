@@ -423,7 +423,7 @@
                 }
 
                 // 删除记录
-                const { error } = await supabase.from('tasks').delete().eq('id', id);
+                const { error } = await supabase.from('tasks').delete().eq('id', id).eq('user_id', USER_ID);
                 if (error) throw error;
                 await loadTasks();
             } catch (err) {
@@ -435,7 +435,7 @@
         window.openEdit = function(id) {
             // 因为直接操作数据，我们从当前已渲染的数据中查找，或者重新查询。
             // 简单起见，直接查询最新数据（但我们已经有了数据，可以使用全局状态，但为了可靠，我们查询一次）
-            supabase.from('tasks').select('*').eq('id', id).single()
+            supabase.from('tasks').select('*').eq('id', id).eq('user_id', USER_ID).single()
                 .then(({ data, error }) => {
                     if (error) throw error;
                     editId = id;
@@ -460,9 +460,10 @@
 
             try {
                 const { error } = await supabase
-                    .from('tasks')
-                    .update({ name: newName, time: ts })
-                    .eq('id', editId);
+               .from('tasks')
+               .update({ name: newName, time: ts })
+               .eq('id', editId)
+               .eq('user_id', USER_ID);
                 if (error) throw error;
                 closeModal();
                 await loadTasks();
@@ -516,9 +517,10 @@
 
                 // 更新任务的 image_url 字段
                 const { error: updateErr } = await supabase
-                    .from('tasks')
-                    .update({ image_url: publicUrl })
-                    .eq('id', currentImgId);
+                .from('tasks')
+                .update({ image_url: publicUrl })
+                .eq('id', currentImgId)
+                .eq('user_id', USER_ID);
                 if (updateErr) throw updateErr;
 
                 fileInput.value = '';
