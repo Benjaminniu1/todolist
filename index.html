@@ -3,37 +3,71 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板 </title>
+    <title>博远跟单看板 · 五列统计版</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        /* 样式保持不变（省略，请从之前复制） */
+        /* 基础样式 */
         * { box-sizing: border-box; }
         body { font-family: 'Inter', system-ui, sans-serif; background: #eef2f7; margin: 0; padding: 24px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .container { max-width: 1600px; width: 100%; background: #ffffff; padding: 28px 24px 32px; border-radius: 28px; box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25); }
-        h1 { text-align: center; font-weight: 600; font-size: 1.9rem; margin: 0 0 12px 0; color: #0a1e2f; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .container { max-width: 1800px; width: 100%; background: #ffffff; padding: 28px 24px 32px; border-radius: 28px; box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25); }
+        h1 { text-align: center; font-weight: 600; font-size: 1.9rem; margin: 0 0 6px 0; color: #0a1e2f; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .status-badge { font-size: 0.8rem; background: #d1e0f0; padding: 4px 14px; border-radius: 40px; color: #1d3b5a; }
-        .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px; background: #f9fcff; padding: 16px 18px; border-radius: 48px; border: 1px solid #e2eaf2; }
+
+        /* 统计栏 */
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 18px 28px;
+            padding: 8px 12px 12px;
+            font-size: 0.9rem;
+            background: #f8fcff;
+            border-radius: 40px;
+            margin: 6px auto 16px;
+            border: 1px solid #e2eaf2;
+            max-width: 800px;
+        }
+        .stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stats .count {
+            font-weight: 700;
+            color: #1d4ed8;
+            background: #dbeafe;
+            padding: 0 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; background: #f9fcff; padding: 16px 18px; border-radius: 48px; border: 1px solid #e2eaf2; }
         .row input, .row button { padding: 10px 16px; border-radius: 40px; border: 1px solid #d4dfe9; font-size: 0.95rem; background: white; flex: 1 1 140px; }
         .row button { background: #3b82f6; color: white; border: none; font-weight: 500; cursor: pointer; flex: 0 1 auto; padding: 10px 28px; box-shadow: 0 4px 8px -4px rgba(59, 130, 246, 0.3); }
         .row button:hover { background: #2563eb; transform: scale(0.97); }
-        .board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 6px; }
-        .col { background: #f6faff; padding: 14px 12px 20px; border-radius: 24px; min-height: 340px; border: 1px solid #e8eff6; }
-        .col h3 { margin: 0 0 14px 6px; font-weight: 600; font-size: 1.25rem; color: #1b3a5c; display: flex; align-items: center; gap: 8px; }
-        .col h3::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #d0ddee, transparent); margin-left: 8px; }
-        .task { background: white; border: 1px solid #e2edf8; padding: 14px 14px 12px; margin-bottom: 12px; border-radius: 18px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02); display: flex; flex-direction: column; gap: 6px; cursor: grab; transition: 0.1s; }
+
+        /* 五列网格 */
+        .board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 6px; }
+        .col { background: #f6faff; padding: 14px 10px 20px; border-radius: 24px; min-height: 300px; border: 1px solid #e8eff6; }
+        .col h3 { margin: 0 0 12px 4px; font-weight: 600; font-size: 1.1rem; color: #1b3a5c; display: flex; align-items: center; gap: 6px; }
+        .col h3::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #d0ddee, transparent); margin-left: 6px; }
+
+        .task { background: white; border: 1px solid #e2edf8; padding: 12px 12px 10px; margin-bottom: 10px; border-radius: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 4px; cursor: grab; transition: 0.1s; }
         .task:active { cursor: grabbing; }
-        .task img { width: 52px; height: 52px; object-fit: cover; border-radius: 14px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; }
+        .task img { width: 48px; height: 48px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; }
         .task img:hover { opacity: 0.8; }
-        .task b { font-weight: 600; font-size: 1rem; color: #0d2847; }
-        .timer { font-family: monospace; font-size: 0.9rem; padding: 4px 12px; border-radius: 40px; display: inline-block; align-self: flex-start; font-weight: 500; }
+        .task b { font-weight: 600; font-size: 0.95rem; color: #0d2847; }
+        .timer { font-family: monospace; font-size: 0.8rem; padding: 2px 10px; border-radius: 30px; display: inline-block; align-self: flex-start; font-weight: 500; }
         .red { background: #ffe4e6; color: #b91c1c; }
         .yellow { background: #fef9c3; color: #854d0e; }
         .blue { background: #dbeafe; color: #1d4ed8; }
         .gray { background: #e5e7eb; color: #374151; }
-        .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-        .actions button { font-size: 0.75rem; padding: 5px 12px; border-radius: 30px; border: 1px solid #d4e0ed; background: #fafdff; cursor: pointer; }
+        .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .actions button { font-size: 0.7rem; padding: 4px 10px; border-radius: 30px; border: 1px solid #d4e0ed; background: #fafdff; cursor: pointer; }
         .actions button:hover { background: #e9f0fa; }
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 999; }
+
+        /* 弹窗与大图 */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 999; }
         .modal-box { width: 360px; background: white; padding: 28px 26px 24px; border-radius: 32px; box-shadow: 0 40px 60px -20px rgba(0,0,0,0.4); }
         .modal-box input { width: 100%; padding: 12px 14px; border-radius: 40px; border: 1px solid #d2ddee; margin-bottom: 14px; }
         .modal-btns { display: flex; gap: 12px; margin-top: 6px; }
@@ -41,17 +75,20 @@
         .modal-btns button:first-child { background: #3b82f6; color: white; }
         .modal-btns button:last-child { background: #f1f5f9; color: #1e293b; }
         #file { display: none; }
-        @media (max-width: 1024px) { .board { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 640px) { .board { grid-template-columns: 1fr; } }
+
         .image-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); display: none;
+            background: rgba(0,0,0,0.85); display: none;
             justify-content: center; align-items: center; z-index: 1000; cursor: pointer;
         }
         .image-modal img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
         .image-modal .close-btn { position: absolute; top: 20px; right: 30px; font-size: 40px; color: white; font-weight: bold; cursor: pointer; }
         .sortable-ghost { opacity: 0.4; background: #dbeafe; }
         .sortable-drag { opacity: 0.8; transform: scale(1.02); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
+
+        @media (max-width: 1200px) { .board { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 768px) { .board { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .board { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -61,17 +98,29 @@
         📋 博远外贸订单跟进看板
         <span id="statusBadge" class="status-badge">⏳ 连接中...</span>
     </h1>
+
+    <!-- 统计栏 -->
+    <div class="stats" id="statsBar">
+        <span>📌 待办 <span class="count" id="stat-todo">0</span></span>
+        <span>⚡ 进行中 <span class="count" id="stat-doing">0</span></span>
+        <span>❗ 已逾期 <span class="count" id="stat-done">0</span></span>
+        <span>📦 已打包待发货 <span class="count" id="stat-shipping">0</span></span>
+        <span>📦 已归档 <span class="count" id="stat-archived">0</span></span>
+    </div>
+
     <div class="row">
         <input id="name" placeholder="任务名称" />
         <input id="time" type="datetime-local" />
         <button onclick="addTask()">➕ 新增</button>
         <input type="file" id="file" accept="image/*" hidden />
     </div>
+
     <div class="board">
         <div class="col" id="todo"><h3>📌 待办</h3></div>
         <div class="col" id="doing"><h3>⚡ 进行中</h3></div>
-        <div class="col" id="done"><h3>⚠️ 已逾期</h3></div>
-        <div class="col" id="archived"><h3>📦 已发货</h3></div>
+        <div class="col" id="done"><h3>❗ 已逾期</h3></div>
+        <div class="col" id="shipping"><h3>📦 已打包待发货</h3></div>
+        <div class="col" id="archived"><h3>📦 已归档</h3></div>
     </div>
 </div>
 
@@ -115,6 +164,7 @@ const dom = {
     todo: document.getElementById('todo'),
     doing: document.getElementById('doing'),
     done: document.getElementById('done'),
+    shipping: document.getElementById('shipping'),
     archived: document.getElementById('archived'),
     name: document.getElementById('name'),
     time: document.getElementById('time'),
@@ -125,6 +175,13 @@ const dom = {
     status: document.getElementById('statusBadge'),
     imageModal: document.getElementById('imageModal'),
     previewImage: document.getElementById('previewImage'),
+    stats: {
+        todo: document.getElementById('stat-todo'),
+        doing: document.getElementById('stat-doing'),
+        done: document.getElementById('stat-done'),
+        shipping: document.getElementById('stat-shipping'),
+        archived: document.getElementById('stat-archived'),
+    }
 };
 
 // ============================================================
@@ -197,17 +254,33 @@ async function updateTaskStatus(id, newStatus) {
 }
 
 // ============================================================
-// 7. 渲染
+// 7. 渲染 + 统计更新
 // ============================================================
 function renderTasks(tasks) {
     dom.todo.innerHTML = '<h3>📌 待办</h3>';
     dom.doing.innerHTML = '<h3>⚡ 进行中</h3>';
-    dom.done.innerHTML = '<h3>⚠️ 已逾期</h3>';
-    dom.archived.innerHTML = '<h3>📦 已发货</h3>';
+    dom.done.innerHTML = '<h3>❗ 已逾期</h3>';
+    dom.shipping.innerHTML = '<h3>📦 已打包待发货</h3>';
+    dom.archived.innerHTML = '<h3>📦 已归档</h3>';
+
+    // 统计各模块数量
+    const counts = { todo: 0, doing: 0, done: 0, shipping: 0, archived: 0 };
+    if (tasks && tasks.length) {
+        tasks.forEach(t => {
+            if (counts.hasOwnProperty(t.status)) counts[t.status]++;
+        });
+    }
+    dom.stats.todo.textContent = counts.todo;
+    dom.stats.doing.textContent = counts.doing;
+    dom.stats.done.textContent = counts.done;
+    dom.stats.shipping.textContent = counts.shipping;
+    dom.stats.archived.textContent = counts.archived;
+
     if (!tasks || tasks.length === 0) {
         initSortable();
         return;
     }
+
     const now = Date.now();
     tasks.forEach(task => {
         const diff = task.time - now;
@@ -219,12 +292,11 @@ function renderTasks(tasks) {
         if (task.image_url) {
             imgHtml = `<img src="${task.image_url}" alt="图片" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />`;
         } else {
-            imgHtml = `<div style="font-size:0.75rem; color:#7d9ab5;">📷 无图片</div>`;
+            imgHtml = `<div style="font-size:0.7rem; color:#7d9ab5;">📷 无图片</div>`;
         }
 
-        // 已归档任务显示灰色，不计算倒计时
         const timerColorClass = task.status === 'archived' ? 'gray' : getTimerColor(diff);
-        const timerText = task.status === 'archived' ? '📦 已发货' : formatTimeLeft(diff);
+        const timerText = task.status === 'archived' ? '📦 已归档' : formatTimeLeft(diff);
 
         div.innerHTML = `
             ${imgHtml}
@@ -241,8 +313,9 @@ function renderTasks(tasks) {
         if (task.status === 'todo') targetCol = dom.todo;
         else if (task.status === 'doing') targetCol = dom.doing;
         else if (task.status === 'done') targetCol = dom.done;
+        else if (task.status === 'shipping') targetCol = dom.shipping;
         else if (task.status === 'archived') targetCol = dom.archived;
-        else targetCol = dom.todo;
+        else targetCol = dom.todo; // fallback
         targetCol.appendChild(div);
     });
     initSortable();
@@ -453,8 +526,7 @@ function checkAndNotify() {
     if (Notification.permission !== 'granted') return;
     const now = Date.now();
     state.cachedTasks.forEach(task => {
-        // 已归档任务不触发通知
-        if (task.status === 'archived') return;
+        if (task.status === 'archived' || task.status === 'shipping') return; // 待发货和归档不通知
         const diff = task.time - now;
         if (diff > 0 && diff < 21600000 && task.status !== 'done') {
             if (!state.notifiedTasks.has(task.id)) {
@@ -474,8 +546,7 @@ async function autoMoveExpiredTasks() {
     const now = Date.now();
     let hasChanges = false;
     for (const task of state.cachedTasks) {
-        // 跳过已归档和已完成的任务
-        if (task.status === 'archived' || task.status === 'done') continue;
+        if (task.status === 'archived' || task.status === 'done' || task.status === 'shipping') continue;
         if (task.time - now <= 0) {
             await updateTaskStatus(task.id, 'done');
             hasChanges = true;
@@ -499,7 +570,7 @@ setInterval(async () => {
             const timerSpan = el.querySelector('.timer');
             if (timerSpan) {
                 if (task.status === 'archived') {
-                    timerSpan.textContent = '📦 已发货';
+                    timerSpan.textContent = '📦 已归档';
                     timerSpan.className = 'timer gray';
                 } else {
                     timerSpan.textContent = formatTimeLeft(diff);
@@ -518,7 +589,7 @@ setInterval(async () => {
 function initSortable() {
     state.sortableInstances.forEach(inst => inst.destroy());
     state.sortableInstances = [];
-    const cols = [dom.todo, dom.doing, dom.done, dom.archived];
+    const cols = [dom.todo, dom.doing, dom.done, dom.shipping, dom.archived];
     cols.forEach(col => {
         const sortable = new Sortable(col, {
             group: 'tasks',
@@ -530,10 +601,8 @@ function initSortable() {
                 const fromId = evt.from.id;
                 const targetId = evt.to.id;
 
-                // 如果来源是归档列，禁止拖出
                 if (fromId === 'archived' && targetId !== 'archived') {
-                    alert('已发货的任务不能移出，只能留在发货中。');
-                    // 回退：重新加载数据恢复原状
+                    alert('已归档的任务不能移出，只能留在归档中。');
                     await loadTasks(false);
                     return;
                 }
@@ -542,16 +611,15 @@ function initSortable() {
                 if (targetId === 'todo') newStatus = 'todo';
                 else if (targetId === 'doing') newStatus = 'doing';
                 else if (targetId === 'done') newStatus = 'done';
+                else if (targetId === 'shipping') newStatus = 'shipping';
                 else if (targetId === 'archived') newStatus = 'archived';
 
-                // 乐观更新
                 const task = state.cachedTasks.find(t => t.id === taskId);
                 if (task) {
                     task.status = newStatus;
                     renderTasks(state.cachedTasks);
                 }
 
-                // 异步保存
                 try {
                     await updateTaskStatus(taskId, newStatus);
                 } catch (err) {
