@@ -3,55 +3,25 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板 · 五列统计版</title>
+    <title>博远跟单看板 · 完成计时</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        /* 基础样式 */
         * { box-sizing: border-box; }
         body { font-family: 'Inter', system-ui, sans-serif; background: #eef2f7; margin: 0; padding: 24px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         .container { max-width: 1800px; width: 100%; background: #ffffff; padding: 28px 24px 32px; border-radius: 28px; box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25); }
         h1 { text-align: center; font-weight: 600; font-size: 1.9rem; margin: 0 0 6px 0; color: #0a1e2f; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .status-badge { font-size: 0.8rem; background: #d1e0f0; padding: 4px 14px; border-radius: 40px; color: #1d3b5a; }
-
-        /* 统计栏 */
-        .stats {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 18px 28px;
-            padding: 8px 12px 12px;
-            font-size: 0.9rem;
-            background: #f8fcff;
-            border-radius: 40px;
-            margin: 6px auto 16px;
-            border: 1px solid #e2eaf2;
-            max-width: 800px;
-        }
-        .stats span {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-        .stats .count {
-            font-weight: 700;
-            color: #1d4ed8;
-            background: #dbeafe;
-            padding: 0 10px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
-
+        .stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px 28px; padding: 8px 12px 12px; font-size: 0.9rem; background: #f8fcff; border-radius: 40px; margin: 6px auto 16px; border: 1px solid #e2eaf2; max-width: 900px; }
+        .stats span { display: flex; align-items: center; gap: 4px; }
+        .stats .count { font-weight: 700; color: #1d4ed8; background: #dbeafe; padding: 0 10px; border-radius: 20px; font-size: 0.85rem; }
         .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; background: #f9fcff; padding: 16px 18px; border-radius: 48px; border: 1px solid #e2eaf2; }
         .row input, .row button { padding: 10px 16px; border-radius: 40px; border: 1px solid #d4dfe9; font-size: 0.95rem; background: white; flex: 1 1 140px; }
         .row button { background: #3b82f6; color: white; border: none; font-weight: 500; cursor: pointer; flex: 0 1 auto; padding: 10px 28px; box-shadow: 0 4px 8px -4px rgba(59, 130, 246, 0.3); }
         .row button:hover { background: #2563eb; transform: scale(0.97); }
-
-        /* 五列网格 */
         .board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 6px; }
         .col { background: #f6faff; padding: 14px 10px 20px; border-radius: 24px; min-height: 300px; border: 1px solid #e8eff6; }
         .col h3 { margin: 0 0 12px 4px; font-weight: 600; font-size: 1.1rem; color: #1b3a5c; display: flex; align-items: center; gap: 6px; }
         .col h3::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #d0ddee, transparent); margin-left: 6px; }
-
         .task { background: white; border: 1px solid #e2edf8; padding: 12px 12px 10px; margin-bottom: 10px; border-radius: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 4px; cursor: grab; transition: 0.1s; }
         .task:active { cursor: grabbing; }
         .task img { width: 48px; height: 48px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; }
@@ -62,11 +32,10 @@
         .yellow { background: #fef9c3; color: #854d0e; }
         .blue { background: #dbeafe; color: #1d4ed8; }
         .gray { background: #e5e7eb; color: #374151; }
+        .green { background: #dcfce7; color: #166534; } /* 保留备用 */
         .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
         .actions button { font-size: 0.7rem; padding: 4px 10px; border-radius: 30px; border: 1px solid #d4e0ed; background: #fafdff; cursor: pointer; }
         .actions button:hover { background: #e9f0fa; }
-
-        /* 弹窗与大图 */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 999; }
         .modal-box { width: 360px; background: white; padding: 28px 26px 24px; border-radius: 32px; box-shadow: 0 40px 60px -20px rgba(0,0,0,0.4); }
         .modal-box input { width: 100%; padding: 12px 14px; border-radius: 40px; border: 1px solid #d2ddee; margin-bottom: 14px; }
@@ -75,7 +44,6 @@
         .modal-btns button:first-child { background: #3b82f6; color: white; }
         .modal-btns button:last-child { background: #f1f5f9; color: #1e293b; }
         #file { display: none; }
-
         .image-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); display: none;
@@ -85,7 +53,6 @@
         .image-modal .close-btn { position: absolute; top: 20px; right: 30px; font-size: 40px; color: white; font-weight: bold; cursor: pointer; }
         .sortable-ghost { opacity: 0.4; background: #dbeafe; }
         .sortable-drag { opacity: 0.8; transform: scale(1.02); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-
         @media (max-width: 1200px) { .board { grid-template-columns: repeat(3, 1fr); } }
         @media (max-width: 768px) { .board { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 480px) { .board { grid-template-columns: 1fr; } }
@@ -98,8 +65,6 @@
         📋 博远外贸订单跟进看板
         <span id="statusBadge" class="status-badge">⏳ 连接中...</span>
     </h1>
-
-    <!-- 统计栏 -->
     <div class="stats" id="statsBar">
         <span>📌 待办 <span class="count" id="stat-todo">0</span></span>
         <span>⚡ 进行中 <span class="count" id="stat-doing">0</span></span>
@@ -107,14 +72,12 @@
         <span>📦 已打包待发货 <span class="count" id="stat-shipping">0</span></span>
         <span>📦 已归档 <span class="count" id="stat-archived">0</span></span>
     </div>
-
     <div class="row">
         <input id="name" placeholder="任务名称" />
         <input id="time" type="datetime-local" />
         <button onclick="addTask()">➕ 新增</button>
         <input type="file" id="file" accept="image/*" hidden />
     </div>
-
     <div class="board">
         <div class="col" id="todo"><h3>📌 待办</h3></div>
         <div class="col" id="doing"><h3>⚡ 进行中</h3></div>
@@ -213,6 +176,26 @@ function formatTimeLeft(ms) {
     parts.push(sec + '秒');
     return parts.join(' ');
 }
+
+// 格式化已完成时间（精确到秒）
+function formatCompletedTime(completedAt) {
+    if (!completedAt) return '❗ 已逾期';
+    const now = Date.now();
+    const diff = now - completedAt;
+    if (diff < 0) return '❗ 已逾期';
+    const s = Math.floor(diff / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    let parts = [];
+    if (d) parts.push(d + '天');
+    if (h) parts.push(h + '小时');
+    if (m) parts.push(m + '分');
+    parts.push(sec + '秒');
+    return '❗ 已逾期 ' + parts.join('');
+}
+
 function getTimerColor(ms) {
     const days = ms / 86400000;
     if (days < 1) return 'red';
@@ -246,10 +229,17 @@ async function fetchSupabase(endpoint, options = {}) {
     return res;
 }
 
+// 更新任务状态，同时处理 completed_at
 async function updateTaskStatus(id, newStatus) {
+    const updateData = { status: newStatus };
+    if (newStatus === 'done') {
+        updateData.completed_at = Date.now();
+    } else {
+        updateData.completed_at = null;
+    }
     await fetchSupabase('/tasks?id=eq.' + id, {
         method: 'PATCH',
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(updateData)
     });
 }
 
@@ -263,12 +253,9 @@ function renderTasks(tasks) {
     dom.shipping.innerHTML = '<h3>📦 已打包待发货</h3>';
     dom.archived.innerHTML = '<h3>📦 已归档</h3>';
 
-    // 统计各模块数量
     const counts = { todo: 0, doing: 0, done: 0, shipping: 0, archived: 0 };
     if (tasks && tasks.length) {
-        tasks.forEach(t => {
-            if (counts.hasOwnProperty(t.status)) counts[t.status]++;
-        });
+        tasks.forEach(t => { if (counts.hasOwnProperty(t.status)) counts[t.status]++; });
     }
     dom.stats.todo.textContent = counts.todo;
     dom.stats.doing.textContent = counts.doing;
@@ -295,13 +282,24 @@ function renderTasks(tasks) {
             imgHtml = `<div style="font-size:0.7rem; color:#7d9ab5;">📷 无图片</div>`;
         }
 
-        const timerColorClass = task.status === 'archived' ? 'gray' : getTimerColor(diff);
-        const timerText = task.status === 'archived' ? '📦 已归档' : formatTimeLeft(diff);
+        let timerText, timerClass;
+        if (task.status === 'archived') {
+            timerText = '📦 已归档';
+            timerClass = 'gray';
+        } else if (task.status === 'done') {
+            // 已完成：红色背景 + 精确计时
+            timerText = formatCompletedTime(task.completed_at);
+            timerClass = 'red';
+        } else {
+            // 其他状态：倒计时
+            timerText = formatTimeLeft(diff);
+            timerClass = getTimerColor(diff);
+        }
 
         div.innerHTML = `
             ${imgHtml}
             <div><b>${task.name}</b></div>
-            <div><span class="timer ${timerColorClass}">${timerText}</span></div>
+            <div><span class="timer ${timerClass}">${timerText}</span></div>
             <div class="actions">
                 <button onclick="uploadImg(${task.id})">🖼️ 图片</button>
                 <button onclick="openEdit(${task.id})">✏️ 修改</button>
@@ -315,7 +313,7 @@ function renderTasks(tasks) {
         else if (task.status === 'done') targetCol = dom.done;
         else if (task.status === 'shipping') targetCol = dom.shipping;
         else if (task.status === 'archived') targetCol = dom.archived;
-        else targetCol = dom.todo; // fallback
+        else targetCol = dom.todo;
         targetCol.appendChild(div);
     });
     initSortable();
@@ -363,6 +361,7 @@ function addTask() {
         time: timestamp,
         status: 'todo',
         image_url: null,
+        completed_at: null,
     };
     fetchSupabase('/tasks', {
         method: 'POST',
@@ -526,9 +525,9 @@ function checkAndNotify() {
     if (Notification.permission !== 'granted') return;
     const now = Date.now();
     state.cachedTasks.forEach(task => {
-        if (task.status === 'archived' || task.status === 'shipping') return; // 待发货和归档不通知
+        if (task.status === 'archived' || task.status === 'shipping' || task.status === 'done') return;
         const diff = task.time - now;
-        if (diff > 0 && diff < 21600000 && task.status !== 'done') {
+        if (diff > 0 && diff < 21600000) {
             if (!state.notifiedTasks.has(task.id)) {
                 state.notifiedTasks.add(task.id);
                 new Notification('⏰ 任务即将到期', {
@@ -548,7 +547,11 @@ async function autoMoveExpiredTasks() {
     for (const task of state.cachedTasks) {
         if (task.status === 'archived' || task.status === 'done' || task.status === 'shipping') continue;
         if (task.time - now <= 0) {
-            await updateTaskStatus(task.id, 'done');
+            const updateData = { status: 'done', completed_at: now };
+            await fetchSupabase('/tasks?id=eq.' + task.id, {
+                method: 'PATCH',
+                body: JSON.stringify(updateData)
+            });
             hasChanges = true;
             state.notifiedTasks.delete(task.id);
         }
@@ -572,6 +575,9 @@ setInterval(async () => {
                 if (task.status === 'archived') {
                     timerSpan.textContent = '📦 已归档';
                     timerSpan.className = 'timer gray';
+                } else if (task.status === 'done') {
+                    timerSpan.textContent = formatCompletedTime(task.completed_at);
+                    timerSpan.className = 'timer red';
                 } else {
                     timerSpan.textContent = formatTimeLeft(diff);
                     timerSpan.className = `timer ${getTimerColor(diff)}`;
@@ -614,12 +620,19 @@ function initSortable() {
                 else if (targetId === 'shipping') newStatus = 'shipping';
                 else if (targetId === 'archived') newStatus = 'archived';
 
+                // 乐观更新
                 const task = state.cachedTasks.find(t => t.id === taskId);
                 if (task) {
                     task.status = newStatus;
+                    if (newStatus === 'done') {
+                        task.completed_at = Date.now();
+                    } else {
+                        task.completed_at = null;
+                    }
                     renderTasks(state.cachedTasks);
                 }
 
+                // 异步保存
                 try {
                     await updateTaskStatus(taskId, newStatus);
                 } catch (err) {
