@@ -1,203 +1,764 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<title>V12 云同步任务系统</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Task V10 · Supabase 云端同步</title>
 
-<style>
-body{font-family:Arial;background:#eef2f7;margin:0;padding:20px;}
-.container{max-width:1100px;margin:auto;background:#fff;padding:20px;border-radius:12px;}
+    <!-- Supabase JS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-.row{display:flex;gap:10px;margin-bottom:15px;}
-input,button{padding:10px;border-radius:8px;border:1px solid #ddd;}
-
-button{background:#3b82f6;color:#fff;border:none;cursor:pointer;}
-
-.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-
-.col{background:#f8fafc;padding:10px;border-radius:10px;min-height:300px;}
-
-.task{background:#fff;border:1px solid #ddd;padding:10px;margin-bottom:8px;border-radius:10px;}
-
-.timer{font-family:monospace;padding:4px 6px;border-radius:6px;display:inline-block;}
-
-.red{background:#ffe4e6;}
-.yellow{background:#fef9c3;}
-.blue{background:#dbeafe;}
-
-.actions button{font-size:12px;margin-right:5px;}
-</style>
+    <style>
+        /* ===== 样式与之前保持一致 ===== */
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            background: #ffffff;
+            padding: 28px 24px 32px;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25);
+        }
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.9rem;
+            margin: 0 0 12px 0;
+            color: #0a1e2f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            background: #d1e0f0;
+            padding: 4px 14px;
+            border-radius: 40px;
+            color: #1d3b5a;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 24px;
+            background: #f9fcff;
+            padding: 16px 18px;
+            border-radius: 48px;
+            border: 1px solid #e2eaf2;
+        }
+        .row input, .row button {
+            padding: 10px 16px;
+            border-radius: 40px;
+            border: 1px solid #d4dfe9;
+            font-size: 0.95rem;
+            background: white;
+            flex: 1 1 140px;
+        }
+        .row button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            flex: 0 1 auto;
+            padding: 10px 28px;
+            box-shadow: 0 4px 8px -4px rgba(59, 130, 246, 0.3);
+        }
+        .row button:hover { background: #2563eb; transform: scale(0.97); }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-top: 6px;
+        }
+        .col {
+            background: #f6faff;
+            padding: 14px 12px 20px;
+            border-radius: 24px;
+            min-height: 340px;
+            border: 1px solid #e8eff6;
+        }
+        .col h3 {
+            margin: 0 0 14px 6px;
+            font-weight: 600;
+            font-size: 1.25rem;
+            color: #1b3a5c;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .col h3::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, #d0ddee, transparent);
+            margin-left: 8px;
+        }
+        .task {
+            background: white;
+            border: 1px solid #e2edf8;
+            padding: 14px 14px 12px;
+            margin-bottom: 12px;
+            border-radius: 18px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .task img {
+            width: 52px;
+            height: 52px;
+            object-fit: cover;
+            border-radius: 14px;
+            cursor: pointer;
+            border: 1px solid #dae6f2;
+            background: #f2f8ff;
+        }
+        .task b {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #0d2847;
+        }
+        .timer {
+            font-family: monospace;
+            font-size: 0.9rem;
+            padding: 4px 12px;
+            border-radius: 40px;
+            display: inline-block;
+            align-self: flex-start;
+            font-weight: 500;
+        }
+        .red { background: #ffe4e6; color: #b91c1c; }
+        .yellow { background: #fef9c3; color: #854d0e; }
+        .blue { background: #dbeafe; color: #1d4ed8; }
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .actions button {
+            font-size: 0.75rem;
+            padding: 5px 12px;
+            border-radius: 30px;
+            border: 1px solid #d4e0ed;
+            background: #fafdff;
+            cursor: pointer;
+        }
+        .actions button:hover { background: #e9f0fa; }
+        .modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .modal-box {
+            width: 360px;
+            background: white;
+            padding: 28px 26px 24px;
+            border-radius: 32px;
+            box-shadow: 0 40px 60px -20px rgba(0,0,0,0.4);
+        }
+        .modal-box input {
+            width: 100%;
+            padding: 12px 14px;
+            border-radius: 40px;
+            border: 1px solid #d2ddee;
+            margin-bottom: 14px;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+        }
+        .modal-btns button {
+            flex: 1;
+            padding: 11px 0;
+            border-radius: 40px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .modal-btns button:first-child { background: #3b82f6; color: white; }
+        .modal-btns button:last-child { background: #f1f5f9; color: #1e293b; }
+        #file { display: none; }
+        @media (max-width: 760px) { .board { grid-template-columns: 1fr; } }
+        .connected { color: #16a34a; }
+        .disconnected { color: #dc2626; }
+    </style>
 </head>
-
 <body>
 
 <div class="container">
+    <h1>
+        博远外贸订单跟进看板
+        <span id="statusBadge" class="status-badge">⏳ 连接中...</span>
+    </h1>
 
-<h1>🚀 V12 云同步版（Supabase）</h1>
+    <div class="row">
+        <input id="name" placeholder="任务名称" />
+        <input id="time" type="datetime-local" />
+        <button onclick="addTask()">➕ 新增</button>
+        <input type="file" id="file" accept="image/*" hidden />
+        <span style="font-size:0.85rem; color:#3d637f;">📎 点击任务图片上传</span>
+    </div>
 
-<div class="row">
-<input id="name" placeholder="任务名称">
-<input id="time" type="datetime-local">
-<button onclick="App.add()">新增</button>
+    <div class="board">
+        <div class="col" id="todo"><h3>📌 待办</h3></div>
+        <div class="col" id="doing"><h3>⚡ 进行中</h3></div>
+        <div class="col" id="done"><h3>✅ 已完成</h3></div>
+    </div>
 </div>
 
-<div class="board">
-<div class="col" id="todo"><h3>待办</h3></div>
-<div class="col" id="doing"><h3>进行中</h3></div>
-<div class="col" id="done"><h3>已完成</h3></div>
+<!-- 编辑弹窗 -->
+<div id="modal" class="modal">
+    <div class="modal-box">
+        <h3>✏️ 编辑任务</h3>
+        <input id="editName" placeholder="任务名称" />
+        <input id="editTime" type="datetime-local" />
+        <div class="modal-btns">
+            <button onclick="saveEdit()">保存</button>
+            <button onclick="closeModal()">取消</button>
+        </div>
+    </div>
 </div>
-
-</div>
-
-<!-- modal -->
-<div id="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);justify-content:center;align-items:center;">
-<div style="background:#fff;padding:20px;width:300px;border-radius:10px;">
-<h3>编辑任务</h3>
-<input id="editName"><br><br>
-<input id="editTime" type="datetime-local"><br><br>
-<button onclick="App.saveEdit()">保存</button>
-<button onclick="UI.close()">取消</button>
-</div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
 <script>
+    (function() {
+        // ============================================================
+        //  🔑 请替换成你自己的 Supabase 配置（在项目 Settings → API 中）
+        // ============================================================
+        const SUPABASE_URL = 'https://你的项目ID.supabase.co';
+        const SUPABASE_ANON_KEY = '你的anon密钥';
 
-/* ================= SUPABASE ================= */
-const supabase = window.supabase.createClient(
-"SUPABASE_URL",
-"SUPABASE_KEY"
-);
+        // 固定用户标识（所有设备共享此 ID，数据互通）
+        const USER_ID = 'default_user';
 
-/* ================= STATE ================= */
-const Store = {
-tasks:[],
-editId:null
-};
+        // ============================================================
+        //  初始化 Supabase 客户端
+        // ============================================================
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* ================= LOAD ================= */
-async function load(){
-let {data} = await supabase.from("tasks").select("*");
-Store.tasks = data || [];
-UI.render();
-}
+        // DOM 元素
+        const todoCol = document.getElementById('todo');
+        const doingCol = document.getElementById('doing');
+        const doneCol = document.getElementById('done');
+        const nameInput = document.getElementById('name');
+        const timeInput = document.getElementById('time');
+        const fileInput = document.getElementById('file');
+        const modal = document.getElementById('modal');
+        const editName = document.getElementById('editName');
+        const editTime = document.getElementById('editTime');
+        const statusBadge = document.getElementById('statusBadge');
 
-/* ================= APP ================= */
-const App = {
+        // 当前正在编辑的任务 ID
+        let editId = null;
+        // 当前上传图片的任务 ID
+        let currentImgId = null;
 
-async add(){
+        // ============================================================
+        //  工具函数
+        // ============================================================
+        function formatTimeLeft(ms) {
+            if (ms <= 0) return '⏳ 已结束';
+            const s = Math.floor(ms / 1000);
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = Math.floor(s % 60);
+            let parts = [];
+            if (d) parts.push(d + '天');
+            if (h) parts.push(h + '小时');
+            if (m) parts.push(m + '分');
+            parts.push(sec + '秒');
+            return parts.join(' ');
+        }
 
-const n = document.getElementById("name").value.trim();
-const t = document.getElementById("time").value;
+        function getTimerColor(ms) {
+            const days = ms / 86400000;
+            if (days < 1) return 'red';
+            if (days <= 2) return 'yellow';
+            return 'blue';
+        }
 
-if(!n||!t)return alert("请填写完整");
+        // ============================================================
+        //  渲染任务列表
+        // ============================================================
+        function renderTasks(tasks) {
+            todoCol.innerHTML = '<h3>📌 待办</h3>';
+            doingCol.innerHTML = '<h3>⚡ 进行中</h3>';
+            doneCol.innerHTML = '<h3>✅ 已完成</h3>';
 
-let task = {
-id:Date.now(),
-name:n,
-time:new Date(t).getTime(),
-status:"todo",
-image:null,
-warn:false,
-done:false
-};
+            if (!tasks || tasks.length === 0) {
+                // 显示空状态
+                return;
+            }
 
-await supabase.from("tasks").insert([task]);
+            const now = Date.now();
 
-await load();
-},
+            tasks.forEach(task => {
+                const diff = task.time - now;
+                const div = document.createElement('div');
+                div.className = 'task';
 
-openEdit(id){
-Store.editId=id;
-let t=Store.tasks.find(x=>x.id===id);
+                let imgHtml = '';
+                if (task.image_url) {
+                    imgHtml = `<img src="${task.image_url}" alt="图片" onclick="uploadImg(${task.id})" title="点击更换" />`;
+                } else {
+                    imgHtml = `<div style="font-size:0.75rem; color:#7d9ab5;">📷 无图片</div>`;
+                }
 
-editName.value=t.name;
-let dt=new Date(t.time);
-dt.setMinutes(dt.getMinutes()-dt.getTimezoneOffset());
-editTime.value=dt.toISOString().slice(0,16);
+                div.innerHTML = `
+                    ${imgHtml}
+                    <div><b>${task.name}</b></div>
+                    <div><span class="timer ${getTimerColor(diff)}">${formatTimeLeft(diff)}</span></div>
+                    <div class="actions">
+                        <button onclick="uploadImg(${task.id})">🖼️ 图片</button>
+                        <button onclick="openEdit(${task.id})">✏️ 修改</button>
+                        <button onclick="deleteTask(${task.id})">🗑️ 删除</button>
+                    </div>
+                `;
 
-modal.style.display="flex";
-},
+                const targetCol = task.status === 'todo' ? todoCol :
+                                  task.status === 'doing' ? doingCol : doneCol;
+                targetCol.appendChild(div);
+            });
+        }
 
-async saveEdit(){
+        // ============================================================
+        //  CRUD 操作（调用 Supabase API）
+        // ============================================================
 
-let t=Store.tasks.find(x=>x.id===Store.editId);
+        // 加载所有任务（按 user_id 过滤）
+        async function loadTasks() {
+            try {
+                statusBadge.textContent = '⏳ 加载中...';
+                const { data, error } = await supabase
+                    .from('tasks')
+                    .select('*')
+                    .eq('user_id', USER_ID)
+                    .order('time', { ascending: true });
 
-await supabase.from("tasks")
-.update({
-name:editName.value,
-time:new Date(editTime.value).getTime()
-})
-.eq("id",Store.editId);
+                if (error) throw error;
+                renderTasks(data || []);
+                statusBadge.textContent = '✅ 已同步';
+                statusBadge.style.background = '#dcfce7';
+            } catch (err) {
+                console.error('加载失败:', err);
+                statusBadge.textContent = '❌ 连接失败';
+                statusBadge.style.background = '#fee2e2';
+                alert('无法连接 Supabase，请检查网络或配置。');
+            }
+        }
 
-modal.style.display="none";
-await load();
-},
+        // 新增任务
+        window.addTask = async function() {
+            const name = nameInput.value.trim();
+            const timeVal = timeInput.value;
+            if (!name) return alert('请输入任务名称');
+            if (!timeVal) return alert('请选择截止时间');
 
-async del(id){
-await supabase.from("tasks").delete().eq("id",id);
-await load();
-}
-};
+            const timestamp = new Date(timeVal).getTime();
+            if (isNaN(timestamp)) return alert('时间格式无效');
 
-/* ================= UI ================= */
-const UI = {
+            const newTask = {
+                id: Date.now() + Math.floor(Math.random() * 1000), // 使用毫秒时间戳作为 ID
+                name: name,
+                time: timestamp,
+                status: 'todo',
+                image_url: null,
+                user_id: USER_ID,
+            };
 
-render(){
+            try {
+                const { error } = await supabase.from('tasks').insert([newTask]);
+                if (error) throw error;
+                nameInput.value = '';
+                timeInput.value = '';
+                // 重新加载（实时订阅也会触发，但主动刷新更及时）
+                await loadTasks();
+            } catch (err) {
+                alert('新增失败: ' + err.message);
+            }
+        };
 
-todo.innerHTML="<h3>待办</h3>";
-doing.innerHTML="<h3>进行中</h3>";
-done.innerHTML="<h3>已完成</h3>";
+        // 删除任务（同时删除 Storage 中的图片）
+        window.deleteTask = async function(id) {
+            if (!confirm('确定删除该任务吗？')) return;
 
-let now=Date.now();
+            try {
+                // 先查询该任务是否有图片
+                const { data, error: fetchErr } = await supabase
+                    .from('tasks')
+                    .select('image_url')
+                    .eq('id', id)
+                    .single();
+                if (fetchErr) throw fetchErr;
 
-Store.tasks.forEach(t=>{
+                // 如果有图片，从 Storage 删除
+                if (data.image_url) {
+                    // 从 URL 中提取文件路径（假设存储桶为 task-images，且文件名为 任务ID.jpg）
+                    const fileName = `${id}.jpg`; // 我们上传时统一命名
+                    const { error: delErr } = await supabase.storage
+                        .from('task-images')
+                        .remove([fileName]);
+                    if (delErr) console.warn('删除图片失败（可能不存在）:', delErr);
+                }
 
-let diff=t.time-now;
+                // 删除记录
+                const { error } = await supabase.from('tasks').delete().eq('id', id);
+                if (error) throw error;
+                await loadTasks();
+            } catch (err) {
+                alert('删除失败: ' + err.message);
+            }
+        };
 
-let div=document.createElement("div");
-div.className="task";
+        // 打开编辑弹窗
+        window.openEdit = function(id) {
+            // 因为直接操作数据，我们从当前已渲染的数据中查找，或者重新查询。
+            // 简单起见，直接查询最新数据（但我们已经有了数据，可以使用全局状态，但为了可靠，我们查询一次）
+            supabase.from('tasks').select('*').eq('id', id).single()
+                .then(({ data, error }) => {
+                    if (error) throw error;
+                    editId = id;
+                    editName.value = data.name;
+                    const dt = new Date(data.time);
+                    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000);
+                    editTime.value = local.toISOString().slice(0, 16);
+                    modal.style.display = 'flex';
+                })
+                .catch(err => alert('获取任务失败: ' + err.message));
+        };
 
-div.innerHTML=`
-<div><b>${t.name}</b></div>
-<div class="timer">${format(diff)}</div>
+        // 保存编辑
+        window.saveEdit = async function() {
+            if (editId === null) return;
+            const newName = editName.value.trim();
+            const newTime = editTime.value;
+            if (!newName) return alert('名称不能为空');
+            if (!newTime) return alert('请选择时间');
+            const ts = new Date(newTime).getTime();
+            if (isNaN(ts)) return alert('时间无效');
 
-<div class="actions">
-<button onclick="App.openEdit(${t.id})">修改</button>
-<button onclick="App.del(${t.id})">删除</button>
-</div>
-`;
+            try {
+                const { error } = await supabase
+                    .from('tasks')
+                    .update({ name: newName, time: ts })
+                    .eq('id', editId);
+                if (error) throw error;
+                closeModal();
+                await loadTasks();
+            } catch (err) {
+                alert('更新失败: ' + err.message);
+            }
+        };
 
-document.getElementById(t.status).appendChild(div);
-});
-},
+        window.closeModal = function() {
+            modal.style.display = 'none';
+            editId = null;
+        };
 
-close(){
-modal.style.display="none";
-}
-};
+        // ============================================================
+        //  图片上传（Supabase Storage）
+        // ============================================================
+        window.uploadImg = function(id) {
+            currentImgId = id;
+            fileInput.click();
+        };
 
-/* ================= TIME ================= */
-function format(ms){
-if(ms<=0)return"已结束";
+        fileInput.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                fileInput.value = '';
+                return;
+            }
 
-let s=ms/1000;
-let d=Math.floor(s/86400);s%=86400;
-let h=Math.floor(s/3600);s%=3600;
-let m=Math.floor(s/60);
-let sec=Math.floor(s%60);
+            // 压缩图片并转为 Blob
+            try {
+                const compressedBlob = await compressImage(file, 800, 0.7);
+                const fileName = `${currentImgId}.jpg`; // 以任务 ID 命名
 
-return (d?d+"天":"")+(h?h+"小时":"")+(m?m+"分":"")+sec+"秒";
-}
+                // 上传到 Supabase Storage（bucket: task-images）
+                const { data, error } = await supabase.storage
+                    .from('task-images')
+                    .upload(fileName, compressedBlob, {
+                        cacheControl: '3600',
+                        upsert: true, // 覆盖已存在的
+                    });
 
-/* ================= LOOP ================= */
-setInterval(()=>UI.render(),1000);
+                if (error) throw error;
 
-/* ================= INIT ================= */
-load();
+                // 获取公开 URL
+                const { data: urlData } = supabase.storage
+                    .from('task-images')
+                    .getPublicUrl(fileName);
+                const publicUrl = urlData.publicUrl;
 
+                // 更新任务的 image_url 字段
+                const { error: updateErr } = await supabase
+                    .from('tasks')
+                    .update({ image_url: publicUrl })
+                    .eq('id', currentImgId);
+                if (updateErr) throw updateErr;
+
+                fileInput.value = '';
+                await loadTasks();
+            } catch (err) {
+                alert('图片上传失败: ' + err.message);
+                fileInput.value = '';
+            }
+        });
+
+        // 辅助：压缩图片
+        function compressImage(file, maxSize, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width, h = img.height;
+                        if (w > h) {
+                            if (w > maxSize) { h *= maxSize / w; w = maxSize; }
+                        } else {
+                            if (h > maxSize) { w *= maxSize / h; h = maxSize; }
+                        }
+                        canvas.width = Math.round(w);
+                        canvas.height = Math.round(h);
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => {
+                            if (blob) resolve(blob);
+                            else reject(new Error('压缩失败'));
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ============================================================
+        //  实时订阅（跨设备同步）
+        // ============================================================
+        function subscribeRealtime() {
+            const channel = supabase
+                .channel('tasks-channel')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',            // 监听所有事件
+                        schema: 'public',
+                        table: 'tasks',
+                        filter: `user_id=eq.${USER_ID}`,
+                    },
+                    (payload) => {
+                        // 收到变化后重新加载数据
+                        console.log('实时更新:', payload);
+                        loadTasks();
+                    }
+                )
+                .subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        console.log('✅ 实时订阅已开启');
+                    } else {
+                        console.warn('订阅状态:', status);
+                    }
+                });
+        }
+
+        // ============================================================
+        //  初始化
+        // ============================================================
+        async function init() {
+            // 先加载数据
+            await loadTasks();
+            // 开启实时订阅
+            subscribeRealtime();
+
+            // 设置默认时间（当前时间 + 2小时）
+            const defaultTime = new Date(Date.now() + 7200000);
+            const localDefault = new Date(defaultTime.getTime() - defaultTime.getTimezoneOffset() * 60000);
+            timeInput.value = localDefault.toISOString().slice(0, 16);
+
+            // 点击 modal 外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) closeModal();
+            });
+
+            // 每秒刷新倒计时（但无需重新拉取，只更新显示的时间数字）
+            // 我们可以定时重新渲染，但最好只在数据变化时渲染。
+            // 简单方案：使用一个定时器，每10秒刷新一次显示（但会闪烁）
+            // 更优：只更新 timer 文本，不重新构建整个 DOM。
+            // 为了演示，我们采用最简单的方式：每10秒重新加载（但会频繁请求）
+            // 实际上，实时订阅已保证数据最新，但倒计时需要每秒更新，所以我们单独更新 timer 文本。
+            // 这里采用 每秒更新一次 timer 显示（不重新加载数据，只更新 DOM 中的 timer）
+            // 但为了代码简洁，我们直接每 5 秒调用 loadTasks()（但会重新渲染，且请求频繁）
+            // 更好的做法是：缓存当前 tasks，然后每秒刷新 timer 文本。
+            // 为了节省 Supabase 请求，我们采用缓存方案：
+            let cachedTasks = [];
+            // 重写 loadTasks 以缓存数据
+            const originalLoad = loadTasks;
+            loadTasks = async function() {
+                try {
+                    const { data, error } = await supabase
+                        .from('tasks')
+                        .select('*')
+                        .eq('user_id', USER_ID)
+                        .order('time', { ascending: true });
+                    if (error) throw error;
+                    cachedTasks = data || [];
+                    renderTasks(cachedTasks);
+                    statusBadge.textContent = '✅ 已同步';
+                    statusBadge.style.background = '#dcfce7';
+                } catch (err) {
+                    console.error('加载失败:', err);
+                    statusBadge.textContent = '❌ 连接失败';
+                    statusBadge.style.background = '#fee2e2';
+                }
+            };
+
+            // 每秒更新 timer（只更新 timer 元素，不重新构建整个 DOM）
+            setInterval(() => {
+                // 如果缓存有数据，只更新 timer 文本
+                if (cachedTasks.length > 0) {
+                    const now = Date.now();
+                    // 找到所有 .task 元素，根据任务 ID 匹配
+                    const taskElements = document.querySelectorAll('.task');
+                    // 用数据重新生成 timer 文本，但为了性能，我们直接遍历缓存数据，更新对应 DOM
+                    // 但因为有多个列，我们可借助 id 属性定位
+                    // 更简单：重新渲染整个列表（但会闪烁且浪费），但刷新间隔1秒太频繁。
+                    // 因此我们只更新 .timer 文本，而不重建整个卡片。
+                    // 但卡片结构复杂，我们可保留卡片引用。
+                    // 这里实现一个轻量更新：遍历所有 .task，找到内部的 .timer 并更新
+                    // 但需保证顺序，我们为每个 task 添加 data-id 属性
+                    // 修改 renderTasks 添加上 data-id
+                    // 为了简化，我们直接替换方法：在 renderTasks 中为 .task 添加 data-id，然后这里通过 data-id 查找
+                    // 我们修改 renderTasks 如下（覆盖原函数）
+                    // 但是代码已定义，我们重新定义。
+                    // 在初始化后重新赋值 renderTasks
+                }
+            }, 1000);
+
+            // 重新定义 renderTasks 以支持定时更新
+            const originalRender = renderTasks;
+            renderTasks = function(tasks) {
+                // 清空列
+                todoCol.innerHTML = '<h3>📌 待办</h3>';
+                doingCol.innerHTML = '<h3>⚡ 进行中</h3>';
+                doneCol.innerHTML = '<h3>✅ 已完成</h3>';
+
+                const now = Date.now();
+                tasks.forEach(task => {
+                    const diff = task.time - now;
+                    const div = document.createElement('div');
+                    div.className = 'task';
+                    div.dataset.id = task.id; // 用于后续更新
+
+                    let imgHtml = '';
+                    if (task.image_url) {
+                        imgHtml = `<img src="${task.image_url}" alt="图片" onclick="uploadImg(${task.id})" title="点击更换" />`;
+                    } else {
+                        imgHtml = `<div style="font-size:0.75rem; color:#7d9ab5;">📷 无图片</div>`;
+                    }
+
+                    div.innerHTML = `
+                        ${imgHtml}
+                        <div><b>${task.name}</b></div>
+                        <div><span class="timer ${getTimerColor(diff)}">${formatTimeLeft(diff)}</span></div>
+                        <div class="actions">
+                            <button onclick="uploadImg(${task.id})">🖼️ 图片</button>
+                            <button onclick="openEdit(${task.id})">✏️ 修改</button>
+                            <button onclick="deleteTask(${task.id})">🗑️ 删除</button>
+                        </div>
+                    `;
+
+                    const targetCol = task.status === 'todo' ? todoCol :
+                                      task.status === 'doing' ? doingCol : doneCol;
+                    targetCol.appendChild(div);
+                });
+            };
+
+            // 覆盖 loadTasks 使用新 renderTasks
+            loadTasks = async function() {
+                try {
+                    const { data, error } = await supabase
+                        .from('tasks')
+                        .select('*')
+                        .eq('user_id', USER_ID)
+                        .order('time', { ascending: true });
+                    if (error) throw error;
+                    cachedTasks = data || [];
+                    renderTasks(cachedTasks);
+                    statusBadge.textContent = '✅ 已同步';
+                    statusBadge.style.background = '#dcfce7';
+                } catch (err) {
+                    console.error('加载失败:', err);
+                    statusBadge.textContent = '❌ 连接失败';
+                    statusBadge.style.background = '#fee2e2';
+                }
+            };
+
+            // 启动定时器更新 timer 显示（不重新拉取数据）
+            setInterval(() => {
+                if (cachedTasks.length === 0) return;
+                const now = Date.now();
+                // 遍历所有 .task，更新内部的 .timer
+                document.querySelectorAll('.task').forEach(el => {
+                    const id = parseInt(el.dataset.id);
+                    const task = cachedTasks.find(t => t.id === id);
+                    if (!task) return;
+                    const diff = task.time - now;
+                    const timerSpan = el.querySelector('.timer');
+                    if (timerSpan) {
+                        timerSpan.textContent = formatTimeLeft(diff);
+                        // 更新颜色
+                        timerSpan.className = `timer ${getTimerColor(diff)}`;
+                    }
+                });
+            }, 1000);
+
+            // 第一次加载
+            await loadTasks();
+            // 开启订阅
+            subscribeRealtime();
+        }
+
+        // 启动
+        init().catch(console.error);
+
+        // 暴露函数给全局
+        window.loadTasks = loadTasks;
+        window.addTask = addTask;
+        window.deleteTask = deleteTask;
+        window.openEdit = openEdit;
+        window.saveEdit = saveEdit;
+        window.closeModal = closeModal;
+        window.uploadImg = uploadImg;
+
+    })();
 </script>
-
 </body>
 </html>
