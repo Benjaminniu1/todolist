@@ -70,7 +70,7 @@
         <span>⚡ 进行中 <span class="count" id="stat-doing">0</span></span>
         <span>❗ 已逾期 <span class="count" id="stat-done">0</span></span>
         <span>📦 已打包待发货 <span class="count" id="stat-shipping">0</span></span>
-        <span>📦 已归档 <span class="count" id="stat-archived">0</span></span>
+        <span>📦 已发货 <span class="count" id="stat-archived">0</span></span>
     </div>
     <div class="row">
         <input id="name" placeholder="任务名称" />
@@ -83,7 +83,7 @@
         <div class="col" id="doing"><h3>⚡ 进行中</h3></div>
         <div class="col" id="done"><h3>❗ 已逾期</h3></div>
         <div class="col" id="shipping"><h3>📦 已打包待发货</h3></div>
-        <div class="col" id="archived"><h3>📦 已归档</h3></div>
+        <div class="col" id="archived"><h3>📦 已发货</h3></div>
     </div>
 </div>
 
@@ -251,7 +251,7 @@ function renderTasks(tasks) {
     dom.doing.innerHTML = '<h3>⚡ 进行中</h3>';
     dom.done.innerHTML = '<h3>❗ 已逾期</h3>';
     dom.shipping.innerHTML = '<h3>📦 已打包待发货</h3>';
-    dom.archived.innerHTML = '<h3>📦 已归档</h3>';
+    dom.archived.innerHTML = '<h3>📦 已发货</h3>';
 
     const counts = { todo: 0, doing: 0, done: 0, shipping: 0, archived: 0 };
     if (tasks && tasks.length) {
@@ -284,7 +284,7 @@ function renderTasks(tasks) {
 
         let timerText, timerClass;
         if (task.status === 'archived') {
-            timerText = '📦 已归档';
+            timerText = '📦 已发货';
             timerClass = 'gray';
         } else if (task.status === 'done') {
             // 已完成：红色背景 + 精确计时
@@ -573,7 +573,7 @@ setInterval(async () => {
             const timerSpan = el.querySelector('.timer');
             if (timerSpan) {
                 if (task.status === 'archived') {
-                    timerSpan.textContent = '📦 已归档';
+                    timerSpan.textContent = '📦 已发货';
                     timerSpan.className = 'timer gray';
                 } else if (task.status === 'done') {
                     timerSpan.textContent = formatCompletedTime(task.completed_at);
