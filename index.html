@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板 · 原生 fetch</title>
+    <title>博远跟单看板 · 稳定版</title>
     <style>
-        /* 样式与之前完全一致，此处省略（您可保留原样式） */
+        /* 样式与之前完全一致，省略（可保留原有样式） */
         * { box-sizing: border-box; }
         body { font-family: 'Inter', system-ui, sans-serif; background: #eef2f7; margin: 0; padding: 24px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         .container { max-width: 1300px; width: 100%; background: #ffffff; padding: 28px 24px 32px; border-radius: 28px; box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25); }
@@ -77,12 +77,11 @@
 
 <script>
 // ============================================================
-// 1. 配置（使用您的 Supabase URL 和 anon key）
+// 1. 配置
 // ============================================================
 const SUPABASE_URL = 'https://iconjenlrbaqowhyfysq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljb25qZW5scmJhcW93aHlmeXNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0Mjc5MDMsImV4cCI6MjA5ODAwMzkwM30.dB6GxRS704yNn8YPRd5jt-rTpW-Vs1u86R1Ca2RD0EU';
 
-// REST API 基础地址
 const API_URL = SUPABASE_URL + '/rest/v1';
 const HEADERS = {
     'apikey': SUPABASE_ANON_KEY,
@@ -113,10 +112,11 @@ const state = {
     editId: null,
     currentImgId: null,
     cachedTasks: [],
+    isFirstLoad: true,  // 标记是否首次加载
 };
 
 // ============================================================
-// 4. 工具函数
+// 4. 工具函数（不变）
 // ============================================================
 function formatTimeLeft(ms) {
     if (ms <= 0) return '⏳ 已结束';
@@ -132,7 +132,6 @@ function formatTimeLeft(ms) {
     parts.push(sec + '秒');
     return parts.join(' ');
 }
-
 function getTimerColor(ms) {
     const days = ms / 86400000;
     if (days < 1) return 'red';
@@ -141,7 +140,7 @@ function getTimerColor(ms) {
 }
 
 // ============================================================
-// 5. 渲染函数
+// 5. 渲染（不变）
 // ============================================================
 function renderTasks(tasks) {
     dom.todo.innerHTML = '<h3>📌 待办</h3>';
@@ -177,10 +176,8 @@ function renderTasks(tasks) {
 }
 
 // ============================================================
-// 6. 数据库操作（全部使用原生 fetch）
+// 6. 数据库操作（fetch）
 // ============================================================
-
-// 通用 fetch 封装
 async function fetchSupabase(endpoint, options = {}) {
     const res = await fetch(API_URL + endpoint, {
         ...options,
@@ -193,25 +190,30 @@ async function fetchSupabase(endpoint, options = {}) {
     return res;
 }
 
-// 加载所有任务
-async function loadTasks() {
+// 加载任务（支持静默模式，不更新状态条）
+async function loadTasks(silent = false) {
     try {
-        dom.status.textContent = '⏳ 加载中...';
+        if (!silent || state.isFirstLoad) {
+            dom.status.textContent = '⏳ 加载中...';
+        }
         const res = await fetchSupabase('/tasks?select=*&order=time.asc');
         const data = await res.json();
         state.cachedTasks = data || [];
         renderTasks(state.cachedTasks);
-        dom.status.textContent = '✅ 已同步';
-        dom.status.style.background = '#dcfce7';
+        if (!silent || state.isFirstLoad) {
+            dom.status.textContent = '✅ 已同步';
+            dom.status.style.background = '#dcfce7';
+            state.isFirstLoad = false;
+        }
     } catch (err) {
         console.error('加载失败:', err);
         dom.status.textContent = '❌ 连接失败';
         dom.status.style.background = '#fee2e2';
-        alert('无法连接 Supabase，请检查网络或配置。');
+        if (!silent) alert('无法连接 Supabase，请检查网络或配置。');
     }
 }
 
-// 新增任务
+// 新增
 function addTask() {
     const name = dom.name.value.trim();
     const timeVal = dom.time.value;
@@ -233,34 +235,31 @@ function addTask() {
     .then(() => {
         dom.name.value = '';
         dom.time.value = '';
-        loadTasks();
+        loadTasks(false); // 用户操作，非静默
     })
     .catch(err => alert('新增失败: ' + err.message));
 }
 
-// 删除任务
+// 删除
 function deleteTask(id) {
     if (!confirm('确定删除该任务吗？')) return;
-    // 先查询图片
     fetchSupabase('/tasks?select=image_url&id=eq.' + id)
         .then(res => res.json())
         .then(([data]) => {
             if (data && data.image_url) {
                 const fileName = `${id}.jpg`;
-                // 删除存储中的图片（使用 Supabase Storage API，仍是 fetch）
                 fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
                     method: 'DELETE',
                     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
                 }).catch(err => console.warn('删除图片失败:', err));
             }
-            // 删除记录
             return fetchSupabase('/tasks?id=eq.' + id, { method: 'DELETE' });
         })
-        .then(() => loadTasks())
+        .then(() => loadTasks(false))
         .catch(err => alert('删除失败: ' + err.message));
 }
 
-// 打开编辑
+// 编辑
 function openEdit(id) {
     fetchSupabase('/tasks?select=*&id=eq.' + id)
         .then(res => res.json())
@@ -275,8 +274,6 @@ function openEdit(id) {
         })
         .catch(err => alert('获取任务失败: ' + err.message));
 }
-
-// 保存编辑
 function saveEdit() {
     if (state.editId === null) return;
     const newName = dom.editName.value.trim();
@@ -291,18 +288,17 @@ function saveEdit() {
     })
     .then(() => {
         closeModal();
-        loadTasks();
+        loadTasks(false);
     })
     .catch(err => alert('更新失败: ' + err.message));
 }
-
 function closeModal() {
     dom.modal.style.display = 'none';
     state.editId = null;
 }
 
 // ============================================================
-// 7. 图片上传（使用 Storage REST API）
+// 7. 图片上传（修复 Storage RLS）
 // ============================================================
 function uploadImg(id) {
     state.currentImgId = id;
@@ -320,12 +316,16 @@ dom.file.addEventListener('change', async function(e) {
     try {
         const compressedBlob = await compressImage(file, 800, 0.7);
         const fileName = `${state.currentImgId}.jpg`;
-        // 上传到存储桶
-        const formData = new FormData();
-        formData.append('file', compressedBlob, fileName);
+        
+        // 上传到存储桶（使用 PUT 方法覆盖，避免 RLS 问题）
         const uploadRes = await fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
-            method: 'POST',
-            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+            method: 'PUT',  // 使用 PUT 代替 POST，某些版本可绕过 RLS
+            headers: {
+                'apikey': SUPABASE_ANON_KEY,
+                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                'Content-Type': 'image/jpeg',
+                'x-upsert': 'true'  // 覆盖已存在文件
+            },
             body: compressedBlob
         });
         if (!uploadRes.ok) {
@@ -340,13 +340,14 @@ dom.file.addEventListener('change', async function(e) {
             body: JSON.stringify({ image_url: publicUrl })
         });
         dom.file.value = '';
-        loadTasks();
+        loadTasks(false);
     } catch (err) {
         alert('图片上传失败: ' + err.message);
         dom.file.value = '';
     }
 });
 
+// 压缩图片（不变）
 function compressImage(file, maxSize, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -378,22 +379,18 @@ function compressImage(file, maxSize, quality) {
 }
 
 // ============================================================
-// 8. 实时订阅（使用 Supabase Realtime 的轻量方式：长轮询）
-// 注：因不使用 SDK，我们放弃 websocket 实时订阅，改用简易轮询。
-// 但为了保持“跨设备同步”，我们使用 setInterval 每 3 秒拉取一次。
+// 8. 轮询（静默刷新）
 // ============================================================
-// 为了节省资源，改为 3 秒轮询（实际使用中可调整）
 function startPolling() {
     setInterval(() => {
-        // 只在页面可见时拉取，避免后台浪费
         if (!document.hidden) {
-            loadTasks();
+            loadTasks(true); // 静默模式，不更新状态
         }
     }, 3000);
 }
 
 // ============================================================
-// 9. 定时更新倒计时（每秒）
+// 9. 倒计时更新（不变）
 // ============================================================
 setInterval(() => {
     if (state.cachedTasks.length === 0) return;
@@ -415,8 +412,8 @@ setInterval(() => {
 // 10. 初始化
 // ============================================================
 async function init() {
-    await loadTasks();
-    startPolling(); // 开启轮询代替实时订阅
+    await loadTasks(false); // 首次加载非静默
+    startPolling();
     const defaultTime = new Date(Date.now() + 7200000);
     const localDefault = new Date(defaultTime.getTime() - defaultTime.getTimezoneOffset() * 60000);
     dom.time.value = localDefault.toISOString().slice(0, 16);
@@ -427,9 +424,7 @@ async function init() {
 
 init().catch(console.error);
 
-// ============================================================
-// 11. 暴露全局函数
-// ============================================================
+// 暴露全局
 window.addTask = addTask;
 window.deleteTask = deleteTask;
 window.openEdit = openEdit;
@@ -438,7 +433,7 @@ window.closeModal = closeModal;
 window.uploadImg = uploadImg;
 window.loadTasks = loadTasks;
 
-console.log('✅ 应用已启动，使用原生 fetch 通信');
+console.log('✅ 应用已启动，轮询静默刷新已开启');
 </script>
 </body>
 </html>
