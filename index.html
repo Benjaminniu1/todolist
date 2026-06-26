@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板 · 稳定版</title>
+    <title>博远跟单看板 · 增强版</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
-        /* 样式与之前完全一致，省略（可保留原有样式） */
+        /* 基础样式保持不变，新增大图模态框样式 */
         * { box-sizing: border-box; }
         body { font-family: 'Inter', system-ui, sans-serif; background: #eef2f7; margin: 0; padding: 24px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         .container { max-width: 1300px; width: 100%; background: #ffffff; padding: 28px 24px 32px; border-radius: 28px; box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25); }
@@ -19,8 +20,10 @@
         .col { background: #f6faff; padding: 14px 12px 20px; border-radius: 24px; min-height: 340px; border: 1px solid #e8eff6; }
         .col h3 { margin: 0 0 14px 6px; font-weight: 600; font-size: 1.25rem; color: #1b3a5c; display: flex; align-items: center; gap: 8px; }
         .col h3::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #d0ddee, transparent); margin-left: 8px; }
-        .task { background: white; border: 1px solid #e2edf8; padding: 14px 14px 12px; margin-bottom: 12px; border-radius: 18px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02); display: flex; flex-direction: column; gap: 6px; }
-        .task img { width: 52px; height: 52px; object-fit: cover; border-radius: 14px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; }
+        .task { background: white; border: 1px solid #e2edf8; padding: 14px 14px 12px; margin-bottom: 12px; border-radius: 18px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02); display: flex; flex-direction: column; gap: 6px; cursor: grab; transition: 0.1s; }
+        .task:active { cursor: grabbing; }
+        .task img { width: 52px; height: 52px; object-fit: cover; border-radius: 14px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; transition: 0.1s; }
+        .task img:hover { opacity: 0.8; }
         .task b { font-weight: 600; font-size: 1rem; color: #0d2847; }
         .timer { font-family: monospace; font-size: 0.9rem; padding: 4px 12px; border-radius: 40px; display: inline-block; align-self: flex-start; font-weight: 500; }
         .red { background: #ffe4e6; color: #b91c1c; }
@@ -29,6 +32,7 @@
         .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
         .actions button { font-size: 0.75rem; padding: 5px 12px; border-radius: 30px; border: 1px solid #d4e0ed; background: #fafdff; cursor: pointer; }
         .actions button:hover { background: #e9f0fa; }
+        /* 编辑弹窗 */
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 999; }
         .modal-box { width: 360px; background: white; padding: 28px 26px 24px; border-radius: 32px; box-shadow: 0 40px 60px -20px rgba(0,0,0,0.4); }
         .modal-box input { width: 100%; padding: 12px 14px; border-radius: 40px; border: 1px solid #d2ddee; margin-bottom: 14px; }
@@ -38,6 +42,45 @@
         .modal-btns button:last-child { background: #f1f5f9; color: #1e293b; }
         #file { display: none; }
         @media (max-width: 760px) { .board { grid-template-columns: 1fr; } }
+
+        /* 大图模态框 */
+        .image-modal {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+        }
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+        .image-modal .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        /* 拖拽时的占位样式 */
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #dbeafe;
+        }
+        .sortable-drag {
+            opacity: 0.8;
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
     </style>
 </head>
 <body>
@@ -75,6 +118,12 @@
     </div>
 </div>
 
+<!-- 大图预览模态框 -->
+<div id="imageModal" class="image-modal" onclick="closeImageModal()">
+    <span class="close-btn">&times;</span>
+    <img id="previewImage" src="" alt="大图预览" />
+</div>
+
 <script>
 // ============================================================
 // 1. 配置
@@ -103,6 +152,8 @@ const dom = {
     editName: document.getElementById('editName'),
     editTime: document.getElementById('editTime'),
     status: document.getElementById('statusBadge'),
+    imageModal: document.getElementById('imageModal'),
+    previewImage: document.getElementById('previewImage'),
 };
 
 // ============================================================
@@ -112,11 +163,13 @@ const state = {
     editId: null,
     currentImgId: null,
     cachedTasks: [],
-    isFirstLoad: true,  // 标记是否首次加载
+    isFirstLoad: true,
+    notifiedTasks: new Set(), // 记录已通知的任务ID，防止重复通知
+    sortableInstances: [],
 };
 
 // ============================================================
-// 4. 工具函数（不变）
+// 4. 工具函数
 // ============================================================
 function formatTimeLeft(ms) {
     if (ms <= 0) return '⏳ 已结束';
@@ -140,25 +193,31 @@ function getTimerColor(ms) {
 }
 
 // ============================================================
-// 5. 渲染（不变）
+// 5. 渲染（修改图片点击事件：打开大图）
 // ============================================================
 function renderTasks(tasks) {
     dom.todo.innerHTML = '<h3>📌 待办</h3>';
     dom.doing.innerHTML = '<h3>⚡ 进行中</h3>';
     dom.done.innerHTML = '<h3>✅ 已完成</h3>';
-    if (!tasks || tasks.length === 0) return;
+    if (!tasks || tasks.length === 0) {
+        // 即使没有任务，也要重新初始化Sortable（因为列被清空了）
+        initSortable();
+        return;
+    }
     const now = Date.now();
     tasks.forEach(task => {
         const diff = task.time - now;
         const div = document.createElement('div');
         div.className = 'task';
         div.dataset.id = task.id;
+
         let imgHtml = '';
         if (task.image_url) {
-            imgHtml = `<img src="${task.image_url}" alt="图片" onclick="uploadImg(${task.id})" title="点击更换" />`;
+            imgHtml = `<img src="${task.image_url}" alt="图片" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />`;
         } else {
             imgHtml = `<div style="font-size:0.75rem; color:#7d9ab5;">📷 无图片</div>`;
         }
+
         div.innerHTML = `
             ${imgHtml}
             <div><b>${task.name}</b></div>
@@ -169,14 +228,29 @@ function renderTasks(tasks) {
                 <button onclick="deleteTask(${task.id})">🗑️ 删除</button>
             </div>
         `;
+
         const targetCol = task.status === 'todo' ? dom.todo :
                           task.status === 'doing' ? dom.doing : dom.done;
         targetCol.appendChild(div);
     });
+    // 重新初始化拖拽（因为DOM更新了）
+    initSortable();
 }
 
 // ============================================================
-// 6. 数据库操作（fetch）
+// 6. 大图模态框
+// ============================================================
+function openImageModal(url) {
+    dom.previewImage.src = url;
+    dom.imageModal.style.display = 'flex';
+}
+function closeImageModal() {
+    dom.imageModal.style.display = 'none';
+}
+// 点击模态框背景关闭（已在HTML中设置onclick）
+
+// ============================================================
+// 7. 数据库操作（与之前相同，增加状态更新辅助函数）
 // ============================================================
 async function fetchSupabase(endpoint, options = {}) {
     const res = await fetch(API_URL + endpoint, {
@@ -190,7 +264,15 @@ async function fetchSupabase(endpoint, options = {}) {
     return res;
 }
 
-// 加载任务（支持静默模式，不更新状态条）
+// 更新任务状态（用于自动移动和拖拽）
+async function updateTaskStatus(id, newStatus) {
+    await fetchSupabase('/tasks?id=eq.' + id, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+    });
+}
+
+// 加载任务（静默模式）
 async function loadTasks(silent = false) {
     try {
         if (!silent || state.isFirstLoad) {
@@ -205,6 +287,8 @@ async function loadTasks(silent = false) {
             dom.status.style.background = '#dcfce7';
             state.isFirstLoad = false;
         }
+        // 重新检查通知（新数据加载后）
+        checkAndNotify();
     } catch (err) {
         console.error('加载失败:', err);
         dom.status.textContent = '❌ 连接失败';
@@ -235,7 +319,7 @@ function addTask() {
     .then(() => {
         dom.name.value = '';
         dom.time.value = '';
-        loadTasks(false); // 用户操作，非静默
+        loadTasks(false);
     })
     .catch(err => alert('新增失败: ' + err.message));
 }
@@ -243,10 +327,12 @@ function addTask() {
 // 删除
 function deleteTask(id) {
     if (!confirm('确定删除该任务吗？')) return;
+    // 先删图片，再删记录
     fetchSupabase('/tasks?select=image_url&id=eq.' + id)
         .then(res => res.json())
-        .then(([data]) => {
-            if (data && data.image_url) {
+        .then(data => {
+            const task = Array.isArray(data) ? data[0] : data;
+            if (task && task.image_url) {
                 const fileName = `${id}.jpg`;
                 fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
                     method: 'DELETE',
@@ -255,8 +341,13 @@ function deleteTask(id) {
             }
             return fetchSupabase('/tasks?id=eq.' + id, { method: 'DELETE' });
         })
-        .then(() => loadTasks(false))
-        .catch(err => alert('删除失败: ' + err.message));
+        .then(() => {
+            loadTasks(false);
+        })
+        .catch(err => {
+            console.error('删除失败:', err);
+            alert('删除失败: ' + err.message);
+        });
 }
 
 // 编辑
@@ -298,13 +389,12 @@ function closeModal() {
 }
 
 // ============================================================
-// 7. 图片上传（修复 Storage RLS）
+// 8. 图片上传（不变）
 // ============================================================
 function uploadImg(id) {
     state.currentImgId = id;
     dom.file.click();
 }
-
 dom.file.addEventListener('change', async function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -316,15 +406,13 @@ dom.file.addEventListener('change', async function(e) {
     try {
         const compressedBlob = await compressImage(file, 800, 0.7);
         const fileName = `${state.currentImgId}.jpg`;
-        
-        // 上传到存储桶（使用 PUT 方法覆盖，避免 RLS 问题）
         const uploadRes = await fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
-            method: 'PUT',  // 使用 PUT 代替 POST，某些版本可绕过 RLS
+            method: 'PUT',
             headers: {
                 'apikey': SUPABASE_ANON_KEY,
                 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
                 'Content-Type': 'image/jpeg',
-                'x-upsert': 'true'  // 覆盖已存在文件
+                'x-upsert': 'true'
             },
             body: compressedBlob
         });
@@ -332,9 +420,7 @@ dom.file.addEventListener('change', async function(e) {
             const errText = await uploadRes.text();
             throw new Error('上传图片失败: ' + errText);
         }
-        // 获取公共 URL
         const publicUrl = SUPABASE_URL + '/storage/v1/object/public/task-images/' + fileName;
-        // 更新数据库
         await fetchSupabase('/tasks?id=eq.' + state.currentImgId, {
             method: 'PATCH',
             body: JSON.stringify({ image_url: publicUrl })
@@ -346,8 +432,6 @@ dom.file.addEventListener('change', async function(e) {
         dom.file.value = '';
     }
 });
-
-// 压缩图片（不变）
 function compressImage(file, maxSize, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -379,44 +463,155 @@ function compressImage(file, maxSize, quality) {
 }
 
 // ============================================================
-// 8. 轮询（静默刷新）
+// 9. 桌面通知 & 自动移动 & 倒计时检查
+// ============================================================
+// 请求通知权限
+function requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+    }
+}
+
+// 检查并发送通知
+function checkAndNotify() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+
+    const now = Date.now();
+    state.cachedTasks.forEach(task => {
+        const diff = task.time - now;
+        // 如果剩余时间 < 6小时（21600000ms）且 > 0，且未通知过，且任务未完成
+        if (diff > 0 && diff < 21600000 && task.status !== 'done') {
+            if (!state.notifiedTasks.has(task.id)) {
+                state.notifiedTasks.add(task.id);
+                new Notification('⏰ 任务即将到期', {
+                    body: `任务 "${task.name}" 剩余时间不足6小时！`,
+                    icon: task.image_url || undefined
+                });
+            }
+        }
+        // 如果已过期或已完成，从通知集合中移除（以便重新触发）
+        if (diff <= 0 || task.status === 'done') {
+            state.notifiedTasks.delete(task.id);
+        }
+    });
+}
+
+// 自动移动过期任务到"已完成"
+async function autoMoveExpiredTasks() {
+    const now = Date.now();
+    let hasChanges = false;
+    for (const task of state.cachedTasks) {
+        const diff = task.time - now;
+        if (diff <= 0 && task.status !== 'done') {
+            // 更新数据库
+            await updateTaskStatus(task.id, 'done');
+            hasChanges = true;
+            // 从通知集合移除
+            state.notifiedTasks.delete(task.id);
+        }
+    }
+    if (hasChanges) {
+        // 重新加载数据
+        await loadTasks(true);
+    }
+}
+
+// 倒计时更新 + 自动移动 + 通知检查（每秒执行）
+setInterval(async () => {
+    // 更新倒计时显示
+    if (state.cachedTasks.length > 0) {
+        const now = Date.now();
+        document.querySelectorAll('.task').forEach(el => {
+            const id = parseInt(el.dataset.id);
+            const task = state.cachedTasks.find(t => t.id === id);
+            if (!task) return;
+            const diff = task.time - now;
+            const timerSpan = el.querySelector('.timer');
+            if (timerSpan) {
+                timerSpan.textContent = formatTimeLeft(diff);
+                timerSpan.className = `timer ${getTimerColor(diff)}`;
+            }
+        });
+    }
+    // 检查自动移动
+    await autoMoveExpiredTasks();
+    // 检查通知
+    checkAndNotify();
+}, 1000);
+
+// ============================================================
+// 10. 拖拽排序（SortableJS）
+// ============================================================
+let sortableInstances = [];
+
+function initSortable() {
+    // 销毁旧的 Sortable 实例
+    sortableInstances.forEach(inst => inst.destroy());
+    sortableInstances = [];
+
+    const columns = [dom.todo, dom.doing, dom.done];
+    columns.forEach(col => {
+        const sortable = new Sortable(col, {
+            group: 'tasks',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: async function(evt) {
+                // 获取拖拽元素的任务ID
+                const item = evt.item;
+                const taskId = parseInt(item.dataset.id);
+                // 获取目标列ID
+                const targetCol = evt.to;
+                let newStatus = 'todo';
+                if (targetCol.id === 'todo') newStatus = 'todo';
+                else if (targetCol.id === 'doing') newStatus = 'doing';
+                else if (targetCol.id === 'done') newStatus = 'done';
+                // 更新数据库
+                try {
+                    await updateTaskStatus(taskId, newStatus);
+                    // 更新本地缓存中的状态
+                    const task = state.cachedTasks.find(t => t.id === taskId);
+                    if (task) task.status = newStatus;
+                    // 刷新列表（以保持顺序）
+                    await loadTasks(true);
+                } catch (err) {
+                    console.error('拖拽更新失败:', err);
+                    alert('更新任务状态失败: ' + err.message);
+                    // 回退：重新加载
+                    loadTasks(false);
+                }
+            }
+        });
+        sortableInstances.push(sortable);
+    });
+}
+
+// ============================================================
+// 11. 轮询（静默刷新）
 // ============================================================
 function startPolling() {
     setInterval(() => {
         if (!document.hidden) {
-            loadTasks(true); // 静默模式，不更新状态
+            loadTasks(true);
         }
     }, 3000);
 }
 
 // ============================================================
-// 9. 倒计时更新（不变）
-// ============================================================
-setInterval(() => {
-    if (state.cachedTasks.length === 0) return;
-    const now = Date.now();
-    document.querySelectorAll('.task').forEach(el => {
-        const id = parseInt(el.dataset.id);
-        const task = state.cachedTasks.find(t => t.id === id);
-        if (!task) return;
-        const diff = task.time - now;
-        const timerSpan = el.querySelector('.timer');
-        if (timerSpan) {
-            timerSpan.textContent = formatTimeLeft(diff);
-            timerSpan.className = `timer ${getTimerColor(diff)}`;
-        }
-    });
-}, 1000);
-
-// ============================================================
-// 10. 初始化
+// 12. 初始化
 // ============================================================
 async function init() {
-    await loadTasks(false); // 首次加载非静默
+    // 请求通知权限
+    requestNotificationPermission();
+
+    await loadTasks(false);
     startPolling();
+
     const defaultTime = new Date(Date.now() + 7200000);
     const localDefault = new Date(defaultTime.getTime() - defaultTime.getTimezoneOffset() * 60000);
     dom.time.value = localDefault.toISOString().slice(0, 16);
+
     dom.modal.addEventListener('click', function(e) {
         if (e.target === dom.modal) closeModal();
     });
@@ -424,7 +619,9 @@ async function init() {
 
 init().catch(console.error);
 
-// 暴露全局
+// ============================================================
+// 13. 暴露全局函数
+// ============================================================
 window.addTask = addTask;
 window.deleteTask = deleteTask;
 window.openEdit = openEdit;
@@ -432,8 +629,10 @@ window.saveEdit = saveEdit;
 window.closeModal = closeModal;
 window.uploadImg = uploadImg;
 window.loadTasks = loadTasks;
+window.openImageModal = openImageModal;
+window.closeImageModal = closeImageModal;
 
-console.log('✅ 应用已启动，轮询静默刷新已开启');
+console.log('✅ 增强版应用已启动');
 </script>
 </body>
 </html>
