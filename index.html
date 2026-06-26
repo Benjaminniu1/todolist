@@ -3,196 +3,37 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远外贸订单跟进看板</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <title>博远跟单看板 · 原生 fetch</title>
     <style>
-        /* ===== 样式：与最初版本完全一致 ===== */
+        /* 样式与之前完全一致，此处省略（您可保留原样式） */
         * { box-sizing: border-box; }
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: #eef2f7;
-            margin: 0;
-            padding: 24px;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .container {
-            max-width: 1300px;
-            width: 100%;
-            background: #ffffff;
-            padding: 28px 24px 32px;
-            border-radius: 28px;
-            box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25);
-        }
-        h1 {
-            text-align: center;
-            font-weight: 600;
-            font-size: 1.9rem;
-            margin: 0 0 12px 0;
-            color: #0a1e2f;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-        .status-badge {
-            font-size: 0.8rem;
-            background: #d1e0f0;
-            padding: 4px 14px;
-            border-radius: 40px;
-            color: #1d3b5a;
-        }
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 24px;
-            background: #f9fcff;
-            padding: 16px 18px;
-            border-radius: 48px;
-            border: 1px solid #e2eaf2;
-        }
-        .row input, .row button {
-            padding: 10px 16px;
-            border-radius: 40px;
-            border: 1px solid #d4dfe9;
-            font-size: 0.95rem;
-            background: white;
-            flex: 1 1 140px;
-        }
-        .row button {
-            background: #3b82f6;
-            color: white;
-            border: none;
-            font-weight: 500;
-            cursor: pointer;
-            flex: 0 1 auto;
-            padding: 10px 28px;
-            box-shadow: 0 4px 8px -4px rgba(59, 130, 246, 0.3);
-        }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #eef2f7; margin: 0; padding: 24px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { max-width: 1300px; width: 100%; background: #ffffff; padding: 28px 24px 32px; border-radius: 28px; box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25); }
+        h1 { text-align: center; font-weight: 600; font-size: 1.9rem; margin: 0 0 12px 0; color: #0a1e2f; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .status-badge { font-size: 0.8rem; background: #d1e0f0; padding: 4px 14px; border-radius: 40px; color: #1d3b5a; }
+        .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 24px; background: #f9fcff; padding: 16px 18px; border-radius: 48px; border: 1px solid #e2eaf2; }
+        .row input, .row button { padding: 10px 16px; border-radius: 40px; border: 1px solid #d4dfe9; font-size: 0.95rem; background: white; flex: 1 1 140px; }
+        .row button { background: #3b82f6; color: white; border: none; font-weight: 500; cursor: pointer; flex: 0 1 auto; padding: 10px 28px; box-shadow: 0 4px 8px -4px rgba(59, 130, 246, 0.3); }
         .row button:hover { background: #2563eb; transform: scale(0.97); }
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 18px;
-            margin-top: 6px;
-        }
-        .col {
-            background: #f6faff;
-            padding: 14px 12px 20px;
-            border-radius: 24px;
-            min-height: 340px;
-            border: 1px solid #e8eff6;
-        }
-        .col h3 {
-            margin: 0 0 14px 6px;
-            font-weight: 600;
-            font-size: 1.25rem;
-            color: #1b3a5c;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .col h3::after {
-            content: '';
-            flex: 1;
-            height: 2px;
-            background: linear-gradient(90deg, #d0ddee, transparent);
-            margin-left: 8px;
-        }
-        .task {
-            background: white;
-            border: 1px solid #e2edf8;
-            padding: 14px 14px 12px;
-            margin-bottom: 12px;
-            border-radius: 18px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .task img {
-            width: 52px;
-            height: 52px;
-            object-fit: cover;
-            border-radius: 14px;
-            cursor: pointer;
-            border: 1px solid #dae6f2;
-            background: #f2f8ff;
-        }
-        .task b {
-            font-weight: 600;
-            font-size: 1rem;
-            color: #0d2847;
-        }
-        .timer {
-            font-family: monospace;
-            font-size: 0.9rem;
-            padding: 4px 12px;
-            border-radius: 40px;
-            display: inline-block;
-            align-self: flex-start;
-            font-weight: 500;
-        }
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 6px; }
+        .col { background: #f6faff; padding: 14px 12px 20px; border-radius: 24px; min-height: 340px; border: 1px solid #e8eff6; }
+        .col h3 { margin: 0 0 14px 6px; font-weight: 600; font-size: 1.25rem; color: #1b3a5c; display: flex; align-items: center; gap: 8px; }
+        .col h3::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #d0ddee, transparent); margin-left: 8px; }
+        .task { background: white; border: 1px solid #e2edf8; padding: 14px 14px 12px; margin-bottom: 12px; border-radius: 18px; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02); display: flex; flex-direction: column; gap: 6px; }
+        .task img { width: 52px; height: 52px; object-fit: cover; border-radius: 14px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; }
+        .task b { font-weight: 600; font-size: 1rem; color: #0d2847; }
+        .timer { font-family: monospace; font-size: 0.9rem; padding: 4px 12px; border-radius: 40px; display: inline-block; align-self: flex-start; font-weight: 500; }
         .red { background: #ffe4e6; color: #b91c1c; }
         .yellow { background: #fef9c3; color: #854d0e; }
         .blue { background: #dbeafe; color: #1d4ed8; }
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-top: 8px;
-        }
-        .actions button {
-            font-size: 0.75rem;
-            padding: 5px 12px;
-            border-radius: 30px;
-            border: 1px solid #d4e0ed;
-            background: #fafdff;
-            cursor: pointer;
-        }
+        .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+        .actions button { font-size: 0.75rem; padding: 5px 12px; border-radius: 30px; border: 1px solid #d4e0ed; background: #fafdff; cursor: pointer; }
         .actions button:hover { background: #e9f0fa; }
-        .modal {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 999;
-        }
-        .modal-box {
-            width: 360px;
-            background: white;
-            padding: 28px 26px 24px;
-            border-radius: 32px;
-            box-shadow: 0 40px 60px -20px rgba(0,0,0,0.4);
-        }
-        .modal-box input {
-            width: 100%;
-            padding: 12px 14px;
-            border-radius: 40px;
-            border: 1px solid #d2ddee;
-            margin-bottom: 14px;
-        }
-        .modal-btns {
-            display: flex;
-            gap: 12px;
-            margin-top: 6px;
-        }
-        .modal-btns button {
-            flex: 1;
-            padding: 11px 0;
-            border-radius: 40px;
-            border: none;
-            font-weight: 500;
-            cursor: pointer;
-        }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 999; }
+        .modal-box { width: 360px; background: white; padding: 28px 26px 24px; border-radius: 32px; box-shadow: 0 40px 60px -20px rgba(0,0,0,0.4); }
+        .modal-box input { width: 100%; padding: 12px 14px; border-radius: 40px; border: 1px solid #d2ddee; margin-bottom: 14px; }
+        .modal-btns { display: flex; gap: 12px; margin-top: 6px; }
+        .modal-btns button { flex: 1; padding: 11px 0; border-radius: 40px; border: none; font-weight: 500; cursor: pointer; }
         .modal-btns button:first-child { background: #3b82f6; color: white; }
         .modal-btns button:last-child { background: #f1f5f9; color: #1e293b; }
         #file { display: none; }
@@ -236,16 +77,21 @@
 
 <script>
 // ============================================================
-//  1. 配置（请确认您的 Supabase URL 和 anon key）
+// 1. 配置（使用您的 Supabase URL 和 anon key）
 // ============================================================
 const SUPABASE_URL = 'https://iconjenlrbaqowhyfysq.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljb25qZW5scmJhcW93aHlmeXNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0Mjc5MDMsImV4cCI6MjA5ODAwMzkwM30.dB6GxRS704yNn8YPRd5jt-rTpW-Vs1u86R1Ca2RD0EU';
 
-// 初始化 Supabase 客户端（全局唯一）
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// REST API 基础地址
+const API_URL = SUPABASE_URL + '/rest/v1';
+const HEADERS = {
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json'
+};
 
 // ============================================================
-//  2. DOM 引用
+// 2. DOM 引用
 // ============================================================
 const dom = {
     todo: document.getElementById('todo'),
@@ -261,16 +107,16 @@ const dom = {
 };
 
 // ============================================================
-//  3. 状态
+// 3. 状态
 // ============================================================
-let state = {
+const state = {
     editId: null,
     currentImgId: null,
     cachedTasks: [],
 };
 
 // ============================================================
-//  4. 工具函数
+// 4. 工具函数
 // ============================================================
 function formatTimeLeft(ms) {
     if (ms <= 0) return '⏳ 已结束';
@@ -295,30 +141,25 @@ function getTimerColor(ms) {
 }
 
 // ============================================================
-//  5. 渲染函数
+// 5. 渲染函数
 // ============================================================
 function renderTasks(tasks) {
-    // 清空列
     dom.todo.innerHTML = '<h3>📌 待办</h3>';
     dom.doing.innerHTML = '<h3>⚡ 进行中</h3>';
     dom.done.innerHTML = '<h3>✅ 已完成</h3>';
-
     if (!tasks || tasks.length === 0) return;
-
     const now = Date.now();
     tasks.forEach(task => {
         const diff = task.time - now;
         const div = document.createElement('div');
         div.className = 'task';
         div.dataset.id = task.id;
-
         let imgHtml = '';
         if (task.image_url) {
             imgHtml = `<img src="${task.image_url}" alt="图片" onclick="uploadImg(${task.id})" title="点击更换" />`;
         } else {
             imgHtml = `<div style="font-size:0.75rem; color:#7d9ab5;">📷 无图片</div>`;
         }
-
         div.innerHTML = `
             ${imgHtml}
             <div><b>${task.name}</b></div>
@@ -329,7 +170,6 @@ function renderTasks(tasks) {
                 <button onclick="deleteTask(${task.id})">🗑️ 删除</button>
             </div>
         `;
-
         const targetCol = task.status === 'todo' ? dom.todo :
                           task.status === 'doing' ? dom.doing : dom.done;
         targetCol.appendChild(div);
@@ -337,16 +177,28 @@ function renderTasks(tasks) {
 }
 
 // ============================================================
-//  6. 数据操作（不含 user_id）
+// 6. 数据库操作（全部使用原生 fetch）
 // ============================================================
+
+// 通用 fetch 封装
+async function fetchSupabase(endpoint, options = {}) {
+    const res = await fetch(API_URL + endpoint, {
+        ...options,
+        headers: { ...HEADERS, ...(options.headers || {}) }
+    });
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`HTTP ${res.status}: ${text}`);
+    }
+    return res;
+}
+
+// 加载所有任务
 async function loadTasks() {
     try {
         dom.status.textContent = '⏳ 加载中...';
-        const { data, error } = await supabase
-            .from('tasks')
-            .select('*')
-            .order('time', { ascending: true });
-        if (error) throw error;
+        const res = await fetchSupabase('/tasks?select=*&order=time.asc');
+        const data = await res.json();
         state.cachedTasks = data || [];
         renderTasks(state.cachedTasks);
         dom.status.textContent = '✅ 已同步';
@@ -365,55 +217,55 @@ function addTask() {
     const timeVal = dom.time.value;
     if (!name) return alert('请输入任务名称');
     if (!timeVal) return alert('请选择截止时间');
-
     const timestamp = new Date(timeVal).getTime();
     if (isNaN(timestamp)) return alert('时间格式无效');
-
     const newTask = {
         id: Date.now() + Math.floor(Math.random() * 1000),
-        name: name,
+        name,
         time: timestamp,
         status: 'todo',
         image_url: null,
     };
-
-    supabase.from('tasks').insert([newTask])
-        .then(({ error }) => {
-            if (error) throw error;
-            dom.name.value = '';
-            dom.time.value = '';
-            loadTasks();
-        })
-        .catch(err => alert('新增失败: ' + err.message));
+    fetchSupabase('/tasks', {
+        method: 'POST',
+        body: JSON.stringify([newTask])
+    })
+    .then(() => {
+        dom.name.value = '';
+        dom.time.value = '';
+        loadTasks();
+    })
+    .catch(err => alert('新增失败: ' + err.message));
 }
 
 // 删除任务
 function deleteTask(id) {
     if (!confirm('确定删除该任务吗？')) return;
-
-    // 先获取图片 URL
-    supabase.from('tasks').select('image_url').eq('id', id).single()
-        .then(({ data, error }) => {
-            if (error) throw error;
-            if (data.image_url) {
+    // 先查询图片
+    fetchSupabase('/tasks?select=image_url&id=eq.' + id)
+        .then(res => res.json())
+        .then(([data]) => {
+            if (data && data.image_url) {
                 const fileName = `${id}.jpg`;
-                supabase.storage.from('task-images').remove([fileName])
-                    .catch(err => console.warn('删除图片失败:', err));
+                // 删除存储中的图片（使用 Supabase Storage API，仍是 fetch）
+                fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
+                    method: 'DELETE',
+                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+                }).catch(err => console.warn('删除图片失败:', err));
             }
-            return supabase.from('tasks').delete().eq('id', id);
+            // 删除记录
+            return fetchSupabase('/tasks?id=eq.' + id, { method: 'DELETE' });
         })
-        .then(({ error }) => {
-            if (error) throw error;
-            loadTasks();
-        })
+        .then(() => loadTasks())
         .catch(err => alert('删除失败: ' + err.message));
 }
 
-// 打开编辑弹窗
+// 打开编辑
 function openEdit(id) {
-    supabase.from('tasks').select('*').eq('id', id).single()
-        .then(({ data, error }) => {
-            if (error) throw error;
+    fetchSupabase('/tasks?select=*&id=eq.' + id)
+        .then(res => res.json())
+        .then(([data]) => {
+            if (!data) throw new Error('任务不存在');
             state.editId = id;
             dom.editName.value = data.name;
             const dt = new Date(data.time);
@@ -433,16 +285,15 @@ function saveEdit() {
     if (!newTime) return alert('请选择时间');
     const ts = new Date(newTime).getTime();
     if (isNaN(ts)) return alert('时间无效');
-
-    supabase.from('tasks')
-        .update({ name: newName, time: ts })
-        .eq('id', state.editId)
-        .then(({ error }) => {
-            if (error) throw error;
-            closeModal();
-            loadTasks();
-        })
-        .catch(err => alert('更新失败: ' + err.message));
+    fetchSupabase('/tasks?id=eq.' + state.editId, {
+        method: 'PATCH',
+        body: JSON.stringify({ name: newName, time: ts })
+    })
+    .then(() => {
+        closeModal();
+        loadTasks();
+    })
+    .catch(err => alert('更新失败: ' + err.message));
 }
 
 function closeModal() {
@@ -451,14 +302,13 @@ function closeModal() {
 }
 
 // ============================================================
-//  7. 图片上传
+// 7. 图片上传（使用 Storage REST API）
 // ============================================================
 function uploadImg(id) {
     state.currentImgId = id;
     dom.file.click();
 }
 
-// 文件选择事件
 dom.file.addEventListener('change', async function(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -467,25 +317,28 @@ dom.file.addEventListener('change', async function(e) {
         dom.file.value = '';
         return;
     }
-
     try {
         const compressedBlob = await compressImage(file, 800, 0.7);
         const fileName = `${state.currentImgId}.jpg`;
-
-        const { error } = await supabase.storage
-            .from('task-images')
-            .upload(fileName, compressedBlob, { cacheControl: '3600', upsert: true });
-        if (error) throw error;
-
-        const { data: urlData } = supabase.storage.from('task-images').getPublicUrl(fileName);
-        const publicUrl = urlData.publicUrl;
-
-        const { error: updateErr } = await supabase
-            .from('tasks')
-            .update({ image_url: publicUrl })
-            .eq('id', state.currentImgId);
-        if (updateErr) throw updateErr;
-
+        // 上传到存储桶
+        const formData = new FormData();
+        formData.append('file', compressedBlob, fileName);
+        const uploadRes = await fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
+            method: 'POST',
+            headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY },
+            body: compressedBlob
+        });
+        if (!uploadRes.ok) {
+            const errText = await uploadRes.text();
+            throw new Error('上传图片失败: ' + errText);
+        }
+        // 获取公共 URL
+        const publicUrl = SUPABASE_URL + '/storage/v1/object/public/task-images/' + fileName;
+        // 更新数据库
+        await fetchSupabase('/tasks?id=eq.' + state.currentImgId, {
+            method: 'PATCH',
+            body: JSON.stringify({ image_url: publicUrl })
+        });
         dom.file.value = '';
         loadTasks();
     } catch (err) {
@@ -494,7 +347,6 @@ dom.file.addEventListener('change', async function(e) {
     }
 });
 
-// 压缩图片辅助函数
 function compressImage(file, maxSize, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -526,30 +378,22 @@ function compressImage(file, maxSize, quality) {
 }
 
 // ============================================================
-//  8. 实时订阅
+// 8. 实时订阅（使用 Supabase Realtime 的轻量方式：长轮询）
+// 注：因不使用 SDK，我们放弃 websocket 实时订阅，改用简易轮询。
+// 但为了保持“跨设备同步”，我们使用 setInterval 每 3 秒拉取一次。
 // ============================================================
-function subscribeRealtime() {
-    const channel = supabase
-        .channel('tasks-channel')
-        .on(
-            'postgres_changes',
-            { event: '*', schema: 'public', table: 'tasks' },
-            (payload) => {
-                console.log('实时更新:', payload);
-                loadTasks();
-            }
-        )
-        .subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                console.log('✅ 实时订阅已开启');
-            } else {
-                console.warn('订阅状态:', status);
-            }
-        });
+// 为了节省资源，改为 3 秒轮询（实际使用中可调整）
+function startPolling() {
+    setInterval(() => {
+        // 只在页面可见时拉取，避免后台浪费
+        if (!document.hidden) {
+            loadTasks();
+        }
+    }, 3000);
 }
 
 // ============================================================
-//  9. 定时更新倒计时（每秒刷新显示）
+// 9. 定时更新倒计时（每秒）
 // ============================================================
 setInterval(() => {
     if (state.cachedTasks.length === 0) return;
@@ -568,32 +412,23 @@ setInterval(() => {
 }, 1000);
 
 // ============================================================
-//  10. 初始化
+// 10. 初始化
 // ============================================================
 async function init() {
     await loadTasks();
-    subscribeRealtime();
-
-    // 设置默认时间（当前时间 + 2小时）
+    startPolling(); // 开启轮询代替实时订阅
     const defaultTime = new Date(Date.now() + 7200000);
     const localDefault = new Date(defaultTime.getTime() - defaultTime.getTimezoneOffset() * 60000);
     dom.time.value = localDefault.toISOString().slice(0, 16);
-
-    // 点击模态框外部关闭
     dom.modal.addEventListener('click', function(e) {
         if (e.target === dom.modal) closeModal();
     });
 }
 
-// 启动
-init().catch(err => {
-    console.error('初始化失败:', err);
-    dom.status.textContent = '❌ 初始化失败';
-    dom.status.style.background = '#fee2e2';
-});
+init().catch(console.error);
 
 // ============================================================
-//  11. 暴露全局函数（供 onclick 调用）
+// 11. 暴露全局函数
 // ============================================================
 window.addTask = addTask;
 window.deleteTask = deleteTask;
@@ -603,7 +438,7 @@ window.closeModal = closeModal;
 window.uploadImg = uploadImg;
 window.loadTasks = loadTasks;
 
-console.log('✅ 应用已启动，所有功能已就绪');
+console.log('✅ 应用已启动，使用原生 fetch 通信');
 </script>
 </body>
 </html>
