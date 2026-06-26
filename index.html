@@ -213,7 +213,9 @@ function renderTasks(tasks) {
 
         let imgHtml = '';
         if (task.image_url) {
-            imgHtml = `<img src="${task.image_url}" alt="图片" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />`;
+        const cacheBuster = '?t=' + Date.now();
+        const imgSrc = task.image_url + cacheBuster;
+        imgHtml = `<img src="${imgSrc}" alt="图片" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />`;
         } else {
             imgHtml = `<div style="font-size:0.75rem; color:#7d9ab5;">📷 无图片</div>`;
         }
