@@ -1,0 +1,21 @@
+{
+  "name": "博远订单跟进看板",
+  "short_name": "订单看板",
+  "description": "外贸订单任务管理看板",
+  "start_url": "/todolist/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/todolist/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/todolist/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
