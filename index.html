@@ -32,7 +32,7 @@
         .yellow { background: #fef9c3; color: #854d0e; }
         .blue { background: #dbeafe; color: #1d4ed8; }
         .gray { background: #e5e7eb; color: #374151; }
-        .green { background: #dcfce7; color: #166534; } /* 保留备用 */
+        .green { background: #dcfce7; color: #166534; }
         .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
         .actions button { font-size: 0.7rem; padding: 4px 10px; border-radius: 30px; border: 1px solid #d4e0ed; background: #fafdff; cursor: pointer; }
         .actions button:hover { background: #e9f0fa; }
@@ -177,23 +177,42 @@ function formatTimeLeft(ms) {
     return parts.join(' ');
 }
 
-// 格式化已完成时间（精确到秒）
-function formatCompletedTime(completedAt) {
-    if (!completedAt) return '❗ 已逾期';
+// [修改] 计算逾期时长 - 从截止时间(deadline)开始计算
+function formatOverdueDuration(deadline) {
+    if (!deadline) return '❗ 已逾期';
     const now = Date.now();
-    const diff = now - completedAt;
-    if (diff < 0) return '❗ 已逾期';
+    const diff = now - deadline;
+    if (diff <= 0) return '⏳ 已结束';  // 未逾期（不应出现在done状态）
     const s = Math.floor(diff / 1000);
     const d = Math.floor(s / 86400);
     const h = Math.floor((s % 86400) / 3600);
     const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
+    const sec = Math.floor(s % 60);
     let parts = [];
     if (d) parts.push(d + '天');
     if (h) parts.push(h + '小时');
     if (m) parts.push(m + '分');
     parts.push(sec + '秒');
     return '❗ 已逾期 ' + parts.join('');
+}
+
+// [新增] 格式化打包时长
+function formatShippingDuration(shippingAt) {
+    if (!shippingAt) return null;
+    const now = Date.now();
+    const diff = now - shippingAt;
+    if (diff <= 0) return '刚刚开始';
+    const s = Math.floor(diff / 1000);
+    const d = Math.floor(s / 86400);
+    const h = Math.floor((s % 86400) / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = Math.floor(s % 60);
+    let parts = [];
+    if (d) parts.push(d + '天');
+    if (h) parts.push(h + '小时');
+    if (m) parts.push(m + '分');
+    parts.push(sec + '秒');
+    return '📦 已打包 ' + parts.join('');
 }
 
 function getTimerColor(ms) {
@@ -229,13 +248,19 @@ async function fetchSupabase(endpoint, options = {}) {
     return res;
 }
 
-// 更新任务状态，同时处理 completed_at
+// [修改] 更新任务状态，同时处理 completed_at 和 shipping_at
 async function updateTaskStatus(id, newStatus) {
     const updateData = { status: newStatus };
     if (newStatus === 'done') {
         updateData.completed_at = Date.now();
+        updateData.shipping_at = null;   // 离开打包状态时清空
+    } else if (newStatus === 'shipping') {
+        updateData.shipping_at = Date.now();
+        updateData.completed_at = null;  // 进入打包时清空逾期标记
     } else {
+        // 其他状态（todo, doing, archived）清空两个时间标记
         updateData.completed_at = null;
+        updateData.shipping_at = null;
     }
     await fetchSupabase('/tasks?id=eq.' + id, {
         method: 'PATCH',
@@ -287,11 +312,14 @@ function renderTasks(tasks) {
             timerText = '📦 已发货';
             timerClass = 'gray';
         } else if (task.status === 'done') {
-            // 已完成：红色背景 + 精确计时
-            timerText = formatCompletedTime(task.completed_at);
+            // [修改] 使用截止时间计算逾期时长
+            timerText = formatOverdueDuration(task.time);
             timerClass = 'red';
+        } else if (task.status === 'shipping') {
+            const duration = formatShippingDuration(task.shipping_at);
+            timerText = duration || '📦 已打包待发货';
+            timerClass = 'green';
         } else {
-            // 其他状态：倒计时
             timerText = formatTimeLeft(diff);
             timerClass = getTimerColor(diff);
         }
@@ -362,6 +390,7 @@ function addTask() {
         status: 'todo',
         image_url: null,
         completed_at: null,
+        shipping_at: null,
     };
     fetchSupabase('/tasks', {
         method: 'POST',
@@ -547,11 +576,7 @@ async function autoMoveExpiredTasks() {
     for (const task of state.cachedTasks) {
         if (task.status === 'archived' || task.status === 'done' || task.status === 'shipping') continue;
         if (task.time - now <= 0) {
-            const updateData = { status: 'done', completed_at: now };
-            await fetchSupabase('/tasks?id=eq.' + task.id, {
-                method: 'PATCH',
-                body: JSON.stringify(updateData)
-            });
+            await updateTaskStatus(task.id, 'done');
             hasChanges = true;
             state.notifiedTasks.delete(task.id);
         }
@@ -561,7 +586,7 @@ async function autoMoveExpiredTasks() {
     }
 }
 
-// 每秒执行
+// 每秒执行（增加打包计时更新）
 setInterval(async () => {
     if (state.cachedTasks.length > 0) {
         const now = Date.now();
@@ -576,8 +601,12 @@ setInterval(async () => {
                     timerSpan.textContent = '📦 已发货';
                     timerSpan.className = 'timer gray';
                 } else if (task.status === 'done') {
-                    timerSpan.textContent = formatCompletedTime(task.completed_at);
+                    timerSpan.textContent = formatOverdueDuration(task.time);
                     timerSpan.className = 'timer red';
+                } else if (task.status === 'shipping') {
+                    const duration = formatShippingDuration(task.shipping_at);
+                    timerSpan.textContent = duration || '📦 已打包待发货';
+                    timerSpan.className = 'timer green';
                 } else {
                     timerSpan.textContent = formatTimeLeft(diff);
                     timerSpan.className = `timer ${getTimerColor(diff)}`;
@@ -590,7 +619,7 @@ setInterval(async () => {
 }, 1000);
 
 // ============================================================
-// 12. 拖拽排序（已归档不可拖出）
+// 12. 拖拽排序（已归档不可拖出，并处理 shipping_at）
 // ============================================================
 function initSortable() {
     state.sortableInstances.forEach(inst => inst.destroy());
@@ -620,14 +649,19 @@ function initSortable() {
                 else if (targetId === 'shipping') newStatus = 'shipping';
                 else if (targetId === 'archived') newStatus = 'archived';
 
-                // 乐观更新
+                // 乐观更新（同时更新 shipping_at 和 completed_at）
                 const task = state.cachedTasks.find(t => t.id === taskId);
                 if (task) {
                     task.status = newStatus;
                     if (newStatus === 'done') {
                         task.completed_at = Date.now();
+                        task.shipping_at = null;
+                    } else if (newStatus === 'shipping') {
+                        task.shipping_at = Date.now();
+                        task.completed_at = null;
                     } else {
                         task.completed_at = null;
+                        task.shipping_at = null;
                     }
                     renderTasks(state.cachedTasks);
                 }
