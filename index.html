@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板 · 完成计时</title>
+    <title>博远跟单看板</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
+        /* 全局样式保持不变，仅新增卡片头部 flex 布局 */
         * { box-sizing: border-box; }
         body { font-family: 'Inter', system-ui, sans-serif; background: #eef2f7; margin: 0; padding: 24px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
         .container { max-width: 1800px; width: 100%; background: #ffffff; padding: 28px 24px 32px; border-radius: 28px; box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25); }
@@ -24,16 +25,45 @@
         .col h3::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #d0ddee, transparent); margin-left: 6px; }
         .task { background: white; border: 1px solid #e2edf8; padding: 12px 12px 10px; margin-bottom: 10px; border-radius: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 4px; cursor: grab; transition: 0.1s; }
         .task:active { cursor: grabbing; }
-        .task img { width: 48px; height: 48px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; }
+        /* 卡片头部：标题 + 折叠按钮 */
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        .task-header .title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #0d2847;
+            word-break: break-word;
+            flex: 1;
+        }
+        .task-header .toggle-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #888;
+            padding: 2px 6px;
+            border-radius: 12px;
+            transition: 0.15s;
+            flex-shrink: 0;
+            margin-top: -2px;
+        }
+        .task-header .toggle-btn:hover {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .task img { width: 48px; height: 48px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; margin-bottom: 4px; }
         .task img:hover { opacity: 0.8; }
-        .task b { font-weight: 600; font-size: 0.95rem; color: #0d2847; }
-        .timer { font-family: monospace; font-size: 0.8rem; padding: 2px 10px; border-radius: 30px; display: inline-block; align-self: flex-start; font-weight: 500; }
+        .timer { font-family: monospace; font-size: 0.8rem; padding: 2px 10px; border-radius: 30px; display: inline-block; align-self: flex-start; font-weight: 500; margin-top: 2px; }
         .red { background: #ffe4e6; color: #b91c1c; }
         .yellow { background: #fef9c3; color: #854d0e; }
         .blue { background: #dbeafe; color: #1d4ed8; }
         .gray { background: #e5e7eb; color: #374151; }
         .green { background: #dcfce7; color: #166534; }
-        .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+        .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; align-items: center; }
         .actions button { font-size: 0.7rem; padding: 4px 10px; border-radius: 30px; border: 1px solid #d4e0ed; background: #fafdff; cursor: pointer; }
         .actions button:hover { background: #e9f0fa; }
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 999; }
@@ -44,11 +74,7 @@
         .modal-btns button:first-child { background: #3b82f6; color: white; }
         .modal-btns button:last-child { background: #f1f5f9; color: #1e293b; }
         #file { display: none; }
-        .image-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: none;
-            justify-content: center; align-items: center; z-index: 1000; cursor: pointer;
-        }
+        .image-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; cursor: pointer; }
         .image-modal img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
         .image-modal .close-btn { position: absolute; top: 20px; right: 30px; font-size: 40px; color: white; font-weight: bold; cursor: pointer; }
         .sortable-ghost { opacity: 0.4; background: #dbeafe; }
@@ -157,6 +183,7 @@ const state = {
     isFirstLoad: true,
     notifiedTasks: new Set(),
     sortableInstances: [],
+    collapsedMap: {},
 };
 
 // ============================================================
@@ -176,50 +203,33 @@ function formatTimeLeft(ms) {
     parts.push(sec + '秒');
     return parts.join(' ');
 }
-
-// [修改] 计算逾期时长 - 从截止时间(deadline)开始计算
-function formatOverdueDuration(deadline) {
-    if (!deadline) return '❗ 已逾期';
+function formatCompletedTime(completedAt, label = '❗ 已逾期') {
+    if (!completedAt) return label;
     const now = Date.now();
-    const diff = now - deadline;
-    if (diff <= 0) return '⏳ 已结束';  // 未逾期（不应出现在done状态）
+    const diff = now - completedAt;
+    if (diff < 0) return label;
     const s = Math.floor(diff / 1000);
     const d = Math.floor(s / 86400);
     const h = Math.floor((s % 86400) / 3600);
     const m = Math.floor((s % 3600) / 60);
-    const sec = Math.floor(s % 60);
+    const sec = s % 60;
     let parts = [];
     if (d) parts.push(d + '天');
     if (h) parts.push(h + '小时');
     if (m) parts.push(m + '分');
     parts.push(sec + '秒');
-    return '❗ 已逾期 ' + parts.join('');
+    return label + ' ' + parts.join('');
 }
-
-// [新增] 格式化打包时长
-function formatShippingDuration(shippingAt) {
-    if (!shippingAt) return null;
-    const now = Date.now();
-    const diff = now - shippingAt;
-    if (diff <= 0) return '刚刚开始';
-    const s = Math.floor(diff / 1000);
-    const d = Math.floor(s / 86400);
-    const h = Math.floor((s % 86400) / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = Math.floor(s % 60);
-    let parts = [];
-    if (d) parts.push(d + '天');
-    if (h) parts.push(h + '小时');
-    if (m) parts.push(m + '分');
-    parts.push(sec + '秒');
-    return '📦 已打包 ' + parts.join('');
-}
-
 function getTimerColor(ms) {
     const days = ms / 86400000;
     if (days < 1) return 'red';
     if (days <= 2) return 'yellow';
     return 'blue';
+}
+function truncateTitle(title, maxLength = 8) {
+    if (!title) return '';
+    if (title.length <= maxLength) return title;
+    return title.substring(0, maxLength) + '…';
 }
 
 // ============================================================
@@ -234,7 +244,7 @@ function closeImageModal() {
 }
 
 // ============================================================
-// 6. 数据库操作（fetch）
+// 6. 数据库操作
 // ============================================================
 async function fetchSupabase(endpoint, options = {}) {
     const res = await fetch(API_URL + endpoint, {
@@ -247,18 +257,15 @@ async function fetchSupabase(endpoint, options = {}) {
     }
     return res;
 }
-
-// [修改] 更新任务状态，同时处理 completed_at 和 shipping_at
 async function updateTaskStatus(id, newStatus) {
     const updateData = { status: newStatus };
     if (newStatus === 'done') {
         updateData.completed_at = Date.now();
-        updateData.shipping_at = null;   // 离开打包状态时清空
+        updateData.shipping_at = null;
     } else if (newStatus === 'shipping') {
         updateData.shipping_at = Date.now();
-        updateData.completed_at = null;  // 进入打包时清空逾期标记
+        updateData.completed_at = null;
     } else {
-        // 其他状态（todo, doing, archived）清空两个时间标记
         updateData.completed_at = null;
         updateData.shipping_at = null;
     }
@@ -269,7 +276,7 @@ async function updateTaskStatus(id, newStatus) {
 }
 
 // ============================================================
-// 7. 渲染 + 统计更新
+// 7. 渲染 + 统计（折叠时图片、缩略标题、倒计时始终显示）
 // ============================================================
 function renderTasks(tasks) {
     dom.todo.innerHTML = '<h3>📌 待办</h3>';
@@ -300,6 +307,9 @@ function renderTasks(tasks) {
         div.className = 'task';
         div.dataset.id = task.id;
 
+        const isCollapsed = state.collapsedMap[task.id] !== undefined ? state.collapsedMap[task.id] : true;
+
+        // 图片（始终显示）
         let imgHtml = '';
         if (task.image_url) {
             imgHtml = `<img src="${task.image_url}" alt="图片" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />`;
@@ -307,32 +317,48 @@ function renderTasks(tasks) {
             imgHtml = `<div style="font-size:0.7rem; color:#7d9ab5;">📷 无图片</div>`;
         }
 
+        // 标题（折叠时截断）
+        const displayTitle = isCollapsed ? truncateTitle(task.name, 8) : task.name;
+
+        // 计时器（始终显示）
         let timerText, timerClass;
         if (task.status === 'archived') {
             timerText = '📦 已发货';
             timerClass = 'gray';
         } else if (task.status === 'done') {
-            // [修改] 使用截止时间计算逾期时长
-            timerText = formatOverdueDuration(task.time);
+            timerText = formatCompletedTime(task.completed_at, '❗ 已逾期');
             timerClass = 'red';
         } else if (task.status === 'shipping') {
-            const duration = formatShippingDuration(task.shipping_at);
-            timerText = duration || '📦 已打包待发货';
+            timerText = formatCompletedTime(task.shipping_at, '📦 已打包完成');
             timerClass = 'green';
         } else {
             timerText = formatTimeLeft(diff);
             timerClass = getTimerColor(diff);
         }
 
+        // 操作按钮（仅展开时显示）
+        let actionsHtml = '';
+        if (!isCollapsed) {
+            actionsHtml = `
+                <div class="actions">
+                    <button onclick="uploadImg(${task.id})">🖼️ 图片</button>
+                    <button onclick="openEdit(${task.id})">✏️ 修改</button>
+                    <button onclick="deleteTask(${task.id})">🗑️ 删除</button>
+                </div>
+            `;
+        }
+
+        // 折叠按钮（右上角）
+        const toggleBtnHtml = `<button class="toggle-btn" onclick="toggleCollapse(${task.id})">${isCollapsed ? '▶' : '▼'}</button>`;
+
         div.innerHTML = `
             ${imgHtml}
-            <div><b>${task.name}</b></div>
-            <div><span class="timer ${timerClass}">${timerText}</span></div>
-            <div class="actions">
-                <button onclick="uploadImg(${task.id})">🖼️ 图片</button>
-                <button onclick="openEdit(${task.id})">✏️ 修改</button>
-                <button onclick="deleteTask(${task.id})">🗑️ 删除</button>
+            <div class="task-header">
+                <div class="title">${displayTitle}</div>
+                ${toggleBtnHtml}
             </div>
+            <div><span class="timer ${timerClass}">${timerText}</span></div>
+            ${actionsHtml}
         `;
 
         let targetCol;
@@ -347,6 +373,12 @@ function renderTasks(tasks) {
     initSortable();
 }
 
+// 折叠/展开切换
+window.toggleCollapse = function(id) {
+    state.collapsedMap[id] = !state.collapsedMap[id];
+    renderTasks(state.cachedTasks);
+};
+
 // ============================================================
 // 8. 加载任务
 // ============================================================
@@ -358,6 +390,11 @@ async function loadTasks(silent = false) {
         const res = await fetchSupabase('/tasks?select=*&order=time.asc');
         const data = await res.json();
         state.cachedTasks = data || [];
+        state.cachedTasks.forEach(task => {
+            if (state.collapsedMap[task.id] === undefined) {
+                state.collapsedMap[task.id] = true;
+            }
+        });
         renderTasks(state.cachedTasks);
         if (!silent || state.isFirstLoad) {
             dom.status.textContent = '✅ 已同步';
@@ -374,7 +411,7 @@ async function loadTasks(silent = false) {
 }
 
 // ============================================================
-// 9. 新增/删除/编辑
+// 9. 增删改
 // ============================================================
 function addTask() {
     const name = dom.name.value.trim();
@@ -399,6 +436,7 @@ function addTask() {
     .then(() => {
         dom.name.value = '';
         dom.time.value = '';
+        state.collapsedMap[newTask.id] = true;
         loadTasks(false);
     })
     .catch(err => alert('新增失败: ' + err.message));
@@ -419,7 +457,10 @@ function deleteTask(id) {
             }
             return fetchSupabase('/tasks?id=eq.' + id, { method: 'DELETE' });
         })
-        .then(() => loadTasks(false))
+        .then(() => {
+            delete state.collapsedMap[id];
+            loadTasks(false);
+        })
         .catch(err => {
             console.error('删除失败:', err);
             alert('删除失败: ' + err.message);
@@ -464,7 +505,7 @@ function closeModal() {
 }
 
 // ============================================================
-// 10. 图片上传（带版本号）
+// 10. 图片上传
 // ============================================================
 function uploadImg(id) {
     state.currentImgId = id;
@@ -481,7 +522,6 @@ dom.file.addEventListener('change', async function(e) {
     try {
         const compressedBlob = await compressImage(file, 800, 0.7);
         const fileName = `${state.currentImgId}.jpg`;
-
         const uploadRes = await fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
             method: 'PUT',
             headers: {
@@ -496,13 +536,11 @@ dom.file.addEventListener('change', async function(e) {
             const errText = await uploadRes.text();
             throw new Error('上传图片失败: ' + errText);
         }
-
         const publicUrl = SUPABASE_URL + '/storage/v1/object/public/task-images/' + fileName + '?v=' + Date.now();
         await fetchSupabase('/tasks?id=eq.' + state.currentImgId, {
             method: 'PATCH',
             body: JSON.stringify({ image_url: publicUrl })
         });
-
         dom.file.value = '';
         await loadTasks(false);
     } catch (err) {
@@ -510,7 +548,6 @@ dom.file.addEventListener('change', async function(e) {
         dom.file.value = '';
     }
 });
-
 function compressImage(file, maxSize, quality) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -542,7 +579,7 @@ function compressImage(file, maxSize, quality) {
 }
 
 // ============================================================
-// 11. 桌面通知 & 自动移动 & 倒计时检查
+// 11. 通知 & 自动逾期移动
 // ============================================================
 function requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -570,23 +607,38 @@ function checkAndNotify() {
         }
     });
 }
+
 async function autoMoveExpiredTasks() {
-    const now = Date.now();
-    let hasChanges = false;
-    for (const task of state.cachedTasks) {
-        if (task.status === 'archived' || task.status === 'done' || task.status === 'shipping') continue;
-        if (task.time - now <= 0) {
+    try {
+        const now = Date.now();
+        let hasChanges = false;
+        const tasksToMove = state.cachedTasks.filter(task => {
+            if (task.status === 'archived' || task.status === 'done' || task.status === 'shipping') return false;
+            return task.time - now <= 0;
+        });
+
+        if (tasksToMove.length > 0) {
+            console.log(`🔍 发现 ${tasksToMove.length} 个任务已超时，即将移动到“已逾期”...`);
+        }
+
+        for (const task of tasksToMove) {
+            console.log(`⏳ 移动任务: "${task.name}" (ID: ${task.id})`);
             await updateTaskStatus(task.id, 'done');
+            console.log(`✅ 任务 "${task.name}" 已逾期`);
             hasChanges = true;
             state.notifiedTasks.delete(task.id);
         }
-    }
-    if (hasChanges) {
-        await loadTasks(true);
+
+        if (hasChanges) {
+            await loadTasks(false);
+            console.log('🔄 界面已刷新，逾期任务已进入“已逾期”列');
+        }
+    } catch (err) {
+        console.error('❌ 自动逾期移动失败:', err);
     }
 }
 
-// 每秒执行（增加打包计时更新）
+// 每秒执行
 setInterval(async () => {
     if (state.cachedTasks.length > 0) {
         const now = Date.now();
@@ -601,11 +653,10 @@ setInterval(async () => {
                     timerSpan.textContent = '📦 已发货';
                     timerSpan.className = 'timer gray';
                 } else if (task.status === 'done') {
-                    timerSpan.textContent = formatOverdueDuration(task.time);
+                    timerSpan.textContent = formatCompletedTime(task.completed_at, '❗ 已逾期');
                     timerSpan.className = 'timer red';
                 } else if (task.status === 'shipping') {
-                    const duration = formatShippingDuration(task.shipping_at);
-                    timerSpan.textContent = duration || '📦 已打包待发货';
+                    timerSpan.textContent = formatCompletedTime(task.shipping_at, '📦 已打包完成');
                     timerSpan.className = 'timer green';
                 } else {
                     timerSpan.textContent = formatTimeLeft(diff);
@@ -619,7 +670,7 @@ setInterval(async () => {
 }, 1000);
 
 // ============================================================
-// 12. 拖拽排序（已归档不可拖出，并处理 shipping_at）
+// 12. 拖拽排序
 // ============================================================
 function initSortable() {
     state.sortableInstances.forEach(inst => inst.destroy());
@@ -648,8 +699,8 @@ function initSortable() {
                 else if (targetId === 'done') newStatus = 'done';
                 else if (targetId === 'shipping') newStatus = 'shipping';
                 else if (targetId === 'archived') newStatus = 'archived';
+                else return;
 
-                // 乐观更新（同时更新 shipping_at 和 completed_at）
                 const task = state.cachedTasks.find(t => t.id === taskId);
                 if (task) {
                     task.status = newStatus;
@@ -666,7 +717,6 @@ function initSortable() {
                     renderTasks(state.cachedTasks);
                 }
 
-                // 异步保存
                 try {
                     await updateTaskStatus(taskId, newStatus);
                 } catch (err) {
@@ -717,6 +767,7 @@ window.uploadImg = uploadImg;
 window.loadTasks = loadTasks;
 window.openImageModal = openImageModal;
 window.closeImageModal = closeImageModal;
+window.toggleCollapse = toggleCollapse;
 </script>
 </body>
 </html>
