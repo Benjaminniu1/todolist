@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板</title>
+    <title>博远跟单看板 · 订单管理</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js">
     </script>
     <style>
@@ -375,16 +375,15 @@
         .order-list .edit-toggle-btn {
             background: none;
             border: none;
-            color: #8b5cf6;
             cursor: pointer;
             font-size: 0.75rem;
             margin-top: 6px;
             padding: 2px 12px;
             border-radius: 12px;
-            border: 1px solid #8b5cf6;
+            border: 1px solid;
         }
         .order-list .edit-toggle-btn:hover {
-            background: #ede9fe;
+            opacity: 0.8;
         }
         .order-list .order-input {
             width: 85%;
@@ -797,6 +796,13 @@
             });
         }
 
+        // ---- 新增删除订单 ----
+        async function deleteOrderFromDB(orderId) {
+            await fetchSupabase('/orders?id=eq.' + orderId, {
+                method: 'DELETE'
+            });
+        }
+
         // ============================================================
         // 7. 渲染任务（折叠时隐藏订单按钮）
         // ============================================================
@@ -867,7 +873,6 @@
                 `;
 
                 if (isCollapsed) {
-                    // 折叠状态：只显示图片、标题、计时器、展开按钮（不显示任何操作按钮）
                     const imgHtml = task.image_url ?
                         `<img class="thumb" src="${task.image_url}" onclick="event.stopPropagation(); openImageModal('${task.image_url}')" title="点击查看大图" />` :
                         `<div class="thumb" style="display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:0.6rem;color:#999;">无图</div>`;
@@ -884,7 +889,6 @@
                         </div>
                     `;
                 } else {
-                    // 展开状态：显示图片、标题、计时器、所有操作按钮（含订单按钮）
                     const imgHtml = task.image_url ?
                         `<img class="img" src="${task.image_url}" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />` :
                         `<div style="font-size:0.7rem; color:#7d9ab5;">📷 无图片</div>`;
@@ -927,7 +931,7 @@
         };
 
         // ============================================================
-        // 8. 订单相关操作（创建、查看、内联编辑）
+        // 8. 订单相关操作（创建、查看、内联编辑、删除）
         // ============================================================
 
         window.openCreateOrder = function(taskId) {
@@ -985,7 +989,7 @@
             state.currentOrderTaskId = null;
         }
 
-        // ---- 查看订单（内联编辑，无复制按钮） ----
+        // ---- 查看订单（内联编辑，无复制按钮，增加删除） ----
         window.viewOrders = async function(taskId) {
             try {
                 const orders = await fetchOrders(taskId);
@@ -1023,8 +1027,13 @@
                             html += `<strong>${f.label}：</strong> ${inputTag}<br>`;
                         });
 
-                        // 修改/保存 按钮
-                        html += `<button class="edit-toggle-btn" onclick="toggleEditOrder(${o.id})">修改</button>`;
+                        // 操作按钮：修改、删除
+                        html += `<div style="display:flex;gap:8px;margin-top:4px;">`;
+                        html +=
+                            `<button class="edit-toggle-btn" style="color:#8b5cf6;border-color:#8b5cf6;" onclick="toggleEditOrder(${o.id})">修改</button>`;
+                        html +=
+                            `<button class="edit-toggle-btn" style="color:#dc2626;border-color:#dc2626;" onclick="deleteOrder(${o.id})">🗑️ 删除</button>`;
+                        html += `</div>`;
                         html += `</div>`;
                     });
                     container.innerHTML = html;
@@ -1042,6 +1051,7 @@
             if (!item) return;
             const inputs = item.querySelectorAll('.order-input, .order-textarea');
             const btn = item.querySelector('.edit-toggle-btn');
+            // btn 是修改按钮，可能有多个，但第一个就是修改按钮
             const isEditing = btn.textContent === '保存';
 
             if (isEditing) {
@@ -1084,6 +1094,24 @@
                 btn.textContent = '保存';
                 const firstInput = item.querySelector('.order-input, .order-textarea');
                 if (firstInput) firstInput.focus();
+            }
+        };
+
+        // ---- 删除订单 ----
+        window.deleteOrder = async function(orderId) {
+            if (!confirm('确定要删除该订单吗？此操作不可撤销。')) return;
+            try {
+                await deleteOrderFromDB(orderId);
+                // 从缓存中移除
+                state._orderCache = state._orderCache.filter(o => o.id !== orderId);
+                // 刷新列表
+                if (state._currentViewTaskId) {
+                    await viewOrders(state._currentViewTaskId);
+                }
+                alert('✅ 订单已删除');
+            } catch (err) {
+                alert('❌ 删除失败：' + err.message);
+                console.error(err);
             }
         };
 
@@ -1506,6 +1534,7 @@
         window.saveOrder = saveOrder;
         window.viewOrders = viewOrders;
         window.toggleEditOrder = toggleEditOrder;
+        window.deleteOrder = deleteOrder;
         window.closeOrderModal = closeOrderModal;
         window.closeViewOrderModal = closeViewOrderModal;
     </script>
