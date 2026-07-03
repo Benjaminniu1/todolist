@@ -3,29 +3,155 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板 </title>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <title>博远跟单看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js">
+    </script>
     <style>
         /* 全局样式保持不变 */
-        * { box-sizing: border-box; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: #eef2f7; margin: 0; padding: 24px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .container { max-width: 1800px; width: 100%; background: #ffffff; padding: 28px 24px 32px; border-radius: 28px; box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25); }
-        h1 { text-align: center; font-weight: 600; font-size: 1.9rem; margin: 0 0 6px 0; color: #0a1e2f; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .status-badge { font-size: 0.8rem; background: #d1e0f0; padding: 4px 14px; border-radius: 40px; color: #1d3b5a; }
-        .stats { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px 28px; padding: 8px 12px 12px; font-size: 0.9rem; background: #f8fcff; border-radius: 40px; margin: 6px auto 16px; border: 1px solid #e2eaf2; max-width: 900px; }
-        .stats span { display: flex; align-items: center; gap: 4px; }
-        .stats .count { font-weight: 700; color: #1d4ed8; background: #dbeafe; padding: 0 10px; border-radius: 20px; font-size: 0.85rem; }
-        .row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 20px; background: #f9fcff; padding: 16px 18px; border-radius: 48px; border: 1px solid #e2eaf2; }
-        .row input, .row button { padding: 10px 16px; border-radius: 40px; border: 1px solid #d4dfe9; font-size: 0.95rem; background: white; flex: 1 1 140px; }
-        .row button { background: #3b82f6; color: white; border: none; font-weight: 500; cursor: pointer; flex: 0 1 auto; padding: 10px 28px; box-shadow: 0 4px 8px -4px rgba(59, 130, 246, 0.3); }
-        .row button:hover { background: #2563eb; transform: scale(0.97); }
-        .board { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 6px; }
-        .col { background: #f6faff; padding: 14px 10px 20px; border-radius: 24px; min-height: 300px; border: 1px solid #e8eff6; }
-        .col h3 { margin: 0 0 12px 4px; font-weight: 600; font-size: 1.1rem; color: #1b3a5c; display: flex; align-items: center; gap: 6px; }
-        .col h3::after { content: ''; flex: 1; height: 2px; background: linear-gradient(90deg, #d0ddee, transparent); margin-left: 6px; }
-        .task { background: white; border: 1px solid #e2edf8; padding: 8px 10px; margin-bottom: 10px; border-radius: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; gap: 4px; cursor: grab; transition: 0.1s; }
-        .task:active { cursor: grabbing; }
-        /* 折叠时单行布局 */
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: #eef2f7;
+            margin: 0;
+            padding: 24px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1800px;
+            width: 100%;
+            background: #ffffff;
+            padding: 28px 24px 32px;
+            border-radius: 28px;
+            box-shadow: 0 20px 40px -12px rgba(0, 20, 40, 0.25);
+        }
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.9rem;
+            margin: 0 0 6px 0;
+            color: #0a1e2f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            background: #d1e0f0;
+            padding: 4px 14px;
+            border-radius: 40px;
+            color: #1d3b5a;
+        }
+        .stats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 18px 28px;
+            padding: 8px 12px 12px;
+            font-size: 0.9rem;
+            background: #f8fcff;
+            border-radius: 40px;
+            margin: 6px auto 16px;
+            border: 1px solid #e2eaf2;
+            max-width: 900px;
+        }
+        .stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .stats .count {
+            font-weight: 700;
+            color: #1d4ed8;
+            background: #dbeafe;
+            padding: 0 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            background: #f9fcff;
+            padding: 16px 18px;
+            border-radius: 48px;
+            border: 1px solid #e2eaf2;
+        }
+        .row input,
+        .row button {
+            padding: 10px 16px;
+            border-radius: 40px;
+            border: 1px solid #d4dfe9;
+            font-size: 0.95rem;
+            background: white;
+            flex: 1 1 140px;
+        }
+        .row button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            flex: 0 1 auto;
+            padding: 10px 28px;
+            box-shadow: 0 4px 8px -4px rgba(59, 130, 246, 0.3);
+        }
+        .row button:hover {
+            background: #2563eb;
+            transform: scale(0.97);
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 16px;
+            margin-top: 6px;
+        }
+        .col {
+            background: #f6faff;
+            padding: 14px 10px 20px;
+            border-radius: 24px;
+            min-height: 300px;
+            border: 1px solid #e8eff6;
+        }
+        .col h3 {
+            margin: 0 0 12px 4px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: #1b3a5c;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .col h3::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: linear-gradient(90deg, #d0ddee, transparent);
+            margin-left: 6px;
+        }
+        .task {
+            background: white;
+            border: 1px solid #e2edf8;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            border-radius: 18px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: grab;
+            transition: 0.1s;
+        }
+        .task:active {
+            cursor: grabbing;
+        }
         .task-collapsed {
             display: flex;
             align-items: center;
@@ -71,792 +197,1317 @@
             color: #888;
             padding: 0 4px;
         }
-        .task-collapsed .toggle-btn:hover { color: #333; }
-
-        /* 展开时布局（原有样式） */
+        .task-collapsed .toggle-btn:hover {
+            color: #333;
+        }
         .task-expanded {
             display: flex;
             flex-direction: column;
             gap: 4px;
         }
-        .task-expanded .img { width: 48px; height: 48px; object-fit: cover; border-radius: 12px; cursor: pointer; border: 1px solid #dae6f2; background: #f2f8ff; }
-        .task-expanded .title { font-weight: 600; font-size: 0.95rem; color: #0d2847; word-break: break-word; }
-        .task-expanded .timer { font-family: monospace; font-size: 0.8rem; padding: 2px 10px; border-radius: 30px; display: inline-block; align-self: flex-start; font-weight: 500; }
-        .task-expanded .actions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; align-items: center; }
-        .task-expanded .actions button { font-size: 0.7rem; padding: 4px 10px; border-radius: 30px; border: 1px solid #d4e0ed; background: #fafdff; cursor: pointer; }
-        .task-expanded .actions button:hover { background: #e9f0fa; }
+        .task-expanded .img {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            border-radius: 12px;
+            cursor: pointer;
+            border: 1px solid #dae6f2;
+            background: #f2f8ff;
+        }
+        .task-expanded .title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #0d2847;
+            word-break: break-word;
+        }
+        .task-expanded .timer {
+            font-family: monospace;
+            font-size: 0.8rem;
+            padding: 2px 10px;
+            border-radius: 30px;
+            display: inline-block;
+            align-self: flex-start;
+            font-weight: 500;
+        }
+        .task-expanded .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 6px;
+            align-items: center;
+        }
+        .task-expanded .actions button {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 30px;
+            border: 1px solid #d4e0ed;
+            background: #fafdff;
+            cursor: pointer;
+        }
+        .task-expanded .actions button:hover {
+            background: #e9f0fa;
+        }
+        .order-btn {
+            background: #f0f7ff !important;
+            border-color: #b0c4de !important;
+            color: #1a4a7a;
+        }
+        .order-btn:hover {
+            background: #dbeafe !important;
+        }
 
-        .timer-red { background: #ffe4e6; color: #b91c1c; }
-        .timer-yellow { background: #fef9c3; color: #854d0e; }
-        .timer-blue { background: #dbeafe; color: #1d4ed8; }
-        .timer-gray { background: #e5e7eb; color: #374151; }
-        .timer-green { background: #dcfce7; color: #166534; }
+        .timer-red {
+            background: #ffe4e6;
+            color: #b91c1c;
+        }
+        .timer-yellow {
+            background: #fef9c3;
+            color: #854d0e;
+        }
+        .timer-blue {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+        .timer-gray {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        .timer-green {
+            background: #dcfce7;
+            color: #166534;
+        }
 
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 999; }
-        .modal-box { width: 360px; background: white; padding: 28px 26px 24px; border-radius: 32px; box-shadow: 0 40px 60px -20px rgba(0,0,0,0.4); }
-        .modal-box input { width: 100%; padding: 12px 14px; border-radius: 40px; border: 1px solid #d2ddee; margin-bottom: 14px; }
-        .modal-btns { display: flex; gap: 12px; margin-top: 6px; }
-        .modal-btns button { flex: 1; padding: 11px 0; border-radius: 40px; border: none; font-weight: 500; cursor: pointer; }
-        .modal-btns button:first-child { background: #3b82f6; color: white; }
-        .modal-btns button:last-child { background: #f1f5f9; color: #1e293b; }
-        #file { display: none; }
-        .image-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; cursor: pointer; }
-        .image-modal img { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 12px; box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
-        .image-modal .close-btn { position: absolute; top: 20px; right: 30px; font-size: 40px; color: white; font-weight: bold; cursor: pointer; }
-        .sortable-ghost { opacity: 0.4; background: #dbeafe; }
-        .sortable-drag { opacity: 0.8; transform: scale(1.02); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
-        @media (max-width: 1200px) { .board { grid-template-columns: repeat(3, 1fr); } }
-        @media (max-width: 768px) { .board { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px) { .board { grid-template-columns: 1fr; } }
+        /* 模态框通用 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .modal-box {
+            width: 600px;
+            max-width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            background: white;
+            padding: 28px 26px 24px;
+            border-radius: 32px;
+            box-shadow: 0 40px 60px -20px rgba(0, 0, 0, 0.4);
+        }
+        .modal-box h3 {
+            margin-top: 0;
+            margin-bottom: 18px;
+        }
+        .modal-box input,
+        .modal-box textarea {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 40px;
+            border: 1px solid #d2ddee;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+        }
+        .modal-box textarea {
+            border-radius: 16px;
+            resize: vertical;
+            min-height: 60px;
+        }
+        .modal-box .form-row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .modal-box .form-row>* {
+            flex: 1;
+            min-width: 120px;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 12px;
+            margin-top: 6px;
+            justify-content: flex-end;
+        }
+        .modal-btns button {
+            padding: 10px 24px;
+            border-radius: 40px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        .modal-btns .primary {
+            background: #3b82f6;
+            color: white;
+        }
+        .modal-btns .primary:hover {
+            background: #2563eb;
+        }
+        .modal-btns .secondary {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+        .modal-btns .secondary:hover {
+            background: #e2e8f0;
+        }
+
+        /* 查看订单列表 - 内联编辑样式 */
+        .order-list .order-item {
+            border-bottom: 1px solid #eee;
+            padding: 10px 0;
+            font-size: 0.9rem;
+            line-height: 1.8;
+            user-select: text;
+        }
+        .order-list .order-item:last-child {
+            border-bottom: none;
+        }
+        .order-list .order-item strong {
+            display: inline-block;
+            min-width: 70px;
+            color: #1f3a5c;
+        }
+        .order-list .edit-toggle-btn {
+            background: none;
+            border: none;
+            color: #8b5cf6;
+            cursor: pointer;
+            font-size: 0.75rem;
+            margin-top: 6px;
+            padding: 2px 12px;
+            border-radius: 12px;
+            border: 1px solid #8b5cf6;
+        }
+        .order-list .edit-toggle-btn:hover {
+            background: #ede9fe;
+        }
+        .order-list .order-input {
+            width: 85%;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 0.9rem;
+            margin: 2px 0;
+            background: #fafafa;
+        }
+        .order-list .order-input:disabled {
+            background: transparent;
+            border: none;
+            padding-left: 2px;
+        }
+        .order-list .order-textarea {
+            width: 85%;
+            padding: 2px 6px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 40px;
+            background: #fafafa;
+        }
+        .order-list .order-textarea:disabled {
+            background: transparent;
+            border: none;
+            resize: none;
+            min-height: auto;
+        }
+
+        #file {
+            display: none;
+        }
+        .image-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            cursor: pointer;
+        }
+        .image-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+        .image-modal .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 40px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #dbeafe;
+        }
+        .sortable-drag {
+            opacity: 0.8;
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        @media (max-width: 1200px) {
+            .board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        @media (max-width: 768px) {
+            .board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 480px) {
+            .board {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>
-        📋 博远外贸订单跟进看板
-        <span id="statusBadge" class="status-badge">⏳ 连接中...</span>
-    </h1>
-    <div class="stats" id="statsBar">
-        <span>📌 待办 <span class="count" id="stat-todo">0</span></span>
-        <span>⚡ 进行中 <span class="count" id="stat-doing">0</span></span>
-        <span>❗ 已逾期 <span class="count" id="stat-done">0</span></span>
-        <span>📦 已打包待发货 <span class="count" id="stat-shipping">0</span></span>
-        <span>📦 已发货 <span class="count" id="stat-archived">0</span></span>
-    </div>
-    <div class="row">
-        <input id="name" placeholder="任务名称" />
-        <input id="time" type="datetime-local" />
-        <button onclick="addTask()">➕ 新增</button>
-        <input type="file" id="file" accept="image/*" hidden />
-    </div>
-    <div class="board">
-        <div class="col" id="todo"><h3>📌 待办</h3></div>
-        <div class="col" id="doing"><h3>⚡ 进行中</h3></div>
-        <div class="col" id="done"><h3>❗ 已逾期</h3></div>
-        <div class="col" id="shipping"><h3>📦 已打包待发货</h3></div>
-        <div class="col" id="archived"><h3>📦 已发货</h3></div>
-    </div>
-</div>
-
-<!-- 编辑弹窗 -->
-<div id="modal" class="modal">
-    <div class="modal-box">
-        <h3>✏️ 编辑任务</h3>
-        <input id="editName" placeholder="任务名称" />
-        <input id="editTime" type="datetime-local" />
-        <div class="modal-btns">
-            <button onclick="saveEdit()">保存</button>
-            <button onclick="closeModal()">取消</button>
+    <div class="container">
+        <h1>
+            📋 博远外贸订单跟进看板
+            <span id="statusBadge" class="status-badge">⏳ 连接中...</span>
+        </h1>
+        <div class="stats" id="statsBar">
+            <span>📌 待办 <span class="count" id="stat-todo">0</span></span>
+            <span>⚡ 进行中 <span class="count" id="stat-doing">0</span></span>
+            <span>❗ 已逾期 <span class="count" id="stat-done">0</span></span>
+            <span>📦 已打包待发货 <span class="count" id="stat-shipping">0</span></span>
+            <span>📦 已发货 <span class="count" id="stat-archived">0</span></span>
+        </div>
+        <div class="row">
+            <input id="name" placeholder="任务名称" />
+            <input id="time" type="datetime-local" />
+            <button onclick="addTask()">➕ 新增</button>
+            <input type="file" id="file" accept="image/*" hidden />
+        </div>
+        <div class="board">
+            <div class="col" id="todo"><h3>📌 待办</h3></div>
+            <div class="col" id="doing"><h3>⚡ 进行中</h3></div>
+            <div class="col" id="done"><h3>❗ 已逾期</h3></div>
+            <div class="col" id="shipping"><h3>📦 已打包待发货</h3></div>
+            <div class="col" id="archived"><h3>📦 已发货</h3></div>
         </div>
     </div>
-</div>
 
-<!-- 大图预览 -->
-<div id="imageModal" class="image-modal" onclick="closeImageModal()">
-    <span class="close-btn">&times;</span>
-    <img id="previewImage" src="" alt="大图预览" />
-</div>
+    <!-- 编辑任务弹窗 -->
+    <div id="modal" class="modal">
+        <div class="modal-box">
+            <h3>✏️ 编辑任务</h3>
+            <input id="editName" placeholder="任务名称" />
+            <input id="editTime" type="datetime-local" />
+            <div class="modal-btns">
+                <button onclick="saveEdit()" class="primary">保存</button>
+                <button onclick="closeModal()" class="secondary">取消</button>
+            </div>
+        </div>
+    </div>
 
-<script>
-// ============================================================
-// 1. 配置
-// ============================================================
-const SUPABASE_URL = 'https://iconjenlrbaqowhyfysq.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljb25qZW5scmJhcW93aHlmeXNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0Mjc5MDMsImV4cCI6MjA5ODAwMzkwM30.dB6GxRS704yNn8YPRd5jt-rTpW-Vs1u86R1Ca2RD0EU';
-
-const API_URL = SUPABASE_URL + '/rest/v1';
-const HEADERS = {
-    'apikey': SUPABASE_ANON_KEY,
-    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-    'Content-Type': 'application/json'
-};
-
-// ============================================================
-// 2. DOM 引用
-// ============================================================
-const dom = {
-    todo: document.getElementById('todo'),
-    doing: document.getElementById('doing'),
-    done: document.getElementById('done'),
-    shipping: document.getElementById('shipping'),
-    archived: document.getElementById('archived'),
-    name: document.getElementById('name'),
-    time: document.getElementById('time'),
-    file: document.getElementById('file'),
-    modal: document.getElementById('modal'),
-    editName: document.getElementById('editName'),
-    editTime: document.getElementById('editTime'),
-    status: document.getElementById('statusBadge'),
-    imageModal: document.getElementById('imageModal'),
-    previewImage: document.getElementById('previewImage'),
-    stats: {
-        todo: document.getElementById('stat-todo'),
-        doing: document.getElementById('stat-doing'),
-        done: document.getElementById('stat-done'),
-        shipping: document.getElementById('stat-shipping'),
-        archived: document.getElementById('stat-archived'),
-    }
-};
-
-// ============================================================
-// 3. 状态
-// ============================================================
-const state = {
-    editId: null,
-    currentImgId: null,
-    cachedTasks: [],
-    isFirstLoad: true,
-    notifiedTasks: new Set(),
-    sortableInstances: [],
-    collapsedMap: {},
-};
-
-// ============================================================
-// 4. 工具函数
-// ============================================================
-function formatTimeLeft(ms) {
-    if (ms <= 0) return '⏳ 已结束';
-    const s = Math.floor(ms / 1000);
-    const d = Math.floor(s / 86400);
-    const h = Math.floor((s % 86400) / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = Math.floor(s % 60);
-    let parts = [];
-    if (d) parts.push(d + '天');
-    if (h) parts.push(h + '小时');
-    if (m) parts.push(m + '分');
-    parts.push(sec + '秒');
-    return parts.join(' ');
-}
-
-// 简化计时（折叠用，中文单位）
-function formatTimeShort(ms, type) {
-    if (ms <= 0) return '即将';
-    const s = Math.floor(ms / 1000);
-    const d = Math.floor(s / 86400);
-    const h = Math.floor((s % 86400) / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    let parts = [];
-    if (d > 0) parts.push(d + '天');
-    if (h > 0) parts.push(h + '时');
-    if (m > 0 && d === 0) parts.push(m + '分'); // 仅当不足一天时显示分钟
-    if (parts.length === 0) parts.push('即将');
-    if (type === 'done') {
-        return '逾期 ' + (parts.length ? parts.join('') : '即将');
-    } else if (type === 'shipping') {
-        return '打包 ' + (parts.length ? parts.join('') : '刚刚');
-    } else {
-        return parts.join('');
-    }
-}
-
-function formatCompletedTime(completedAt, label = '❗ 已逾期') {
-    if (!completedAt) return label;
-    const now = Date.now();
-    const diff = now - completedAt;
-    if (diff < 0) return label;
-    const s = Math.floor(diff / 1000);
-    const d = Math.floor(s / 86400);
-    const h = Math.floor((s % 86400) / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
-    let parts = [];
-    if (d) parts.push(d + '天');
-    if (h) parts.push(h + '小时');
-    if (m) parts.push(m + '分');
-    parts.push(sec + '秒');
-    return label + ' ' + parts.join('');
-}
-function getTimerColor(ms) {
-    const days = ms / 86400000;
-    if (days < 1) return 'timer-red';
-    if (days <= 2) return 'timer-yellow';
-    return 'timer-blue';
-}
-function truncateTitle(title, maxLength = 8) {
-    if (!title) return '';
-    if (title.length <= maxLength) return title;
-    return title.substring(0, maxLength) + '…';
-}
-
-// ============================================================
-// 5. 大图模态框
-// ============================================================
-function openImageModal(url) {
-    dom.previewImage.src = url;
-    dom.imageModal.style.display = 'flex';
-}
-function closeImageModal() {
-    dom.imageModal.style.display = 'none';
-}
-
-// ============================================================
-// 6. 数据库操作
-// ============================================================
-async function fetchSupabase(endpoint, options = {}) {
-    const res = await fetch(API_URL + endpoint, {
-        ...options,
-        headers: { ...HEADERS, ...(options.headers || {}) }
-    });
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`HTTP ${res.status}: ${text}`);
-    }
-    return res;
-}
-async function updateTaskStatus(id, newStatus) {
-    const updateData = { status: newStatus };
-    if (newStatus === 'done') {
-        updateData.completed_at = Date.now();
-        updateData.shipping_at = null;
-    } else if (newStatus === 'shipping') {
-        updateData.shipping_at = Date.now();
-        updateData.completed_at = null;
-    } else {
-        updateData.completed_at = null;
-        updateData.shipping_at = null;
-    }
-    await fetchSupabase('/tasks?id=eq.' + id, {
-        method: 'PATCH',
-        body: JSON.stringify(updateData)
-    });
-}
-
-// ============================================================
-// 7. 渲染（折叠时单行布局 + 简化计时）
-// ============================================================
-function renderTasks(tasks) {
-    dom.todo.innerHTML = '<h3>📌 待办</h3>';
-    dom.doing.innerHTML = '<h3>⚡ 进行中</h3>';
-    dom.done.innerHTML = '<h3>❗ 已逾期</h3>';
-    dom.shipping.innerHTML = '<h3>📦 已打包待发货</h3>';
-    dom.archived.innerHTML = '<h3>📦 已发货</h3>';
-
-    const counts = { todo: 0, doing: 0, done: 0, shipping: 0, archived: 0 };
-    if (tasks && tasks.length) {
-        tasks.forEach(t => { if (counts.hasOwnProperty(t.status)) counts[t.status]++; });
-    }
-    dom.stats.todo.textContent = counts.todo;
-    dom.stats.doing.textContent = counts.doing;
-    dom.stats.done.textContent = counts.done;
-    dom.stats.shipping.textContent = counts.shipping;
-    dom.stats.archived.textContent = counts.archived;
-
-    if (!tasks || tasks.length === 0) {
-        initSortable();
-        return;
-    }
-
-    const now = Date.now();
-    tasks.forEach(task => {
-        const diff = task.time - now;
-        const div = document.createElement('div');
-        div.className = 'task';
-        div.dataset.id = task.id;
-
-        const isCollapsed = state.collapsedMap[task.id] !== undefined ? state.collapsedMap[task.id] : true;
-
-        // 获取计时器文本和样式（根据折叠状态选择不同格式）
-        let timerText, timerClass;
-        if (task.status === 'archived') {
-            timerText = isCollapsed ? '已发货' : '📦 已发货';
-            timerClass = 'timer-gray';
-        } else if (task.status === 'done') {
-            if (isCollapsed) {
-                const diffMs = Date.now() - (task.completed_at || Date.now());
-                timerText = formatTimeShort(diffMs, 'done');
-            } else {
-                timerText = formatCompletedTime(task.completed_at, '❗ 已逾期');
-            }
-            timerClass = 'timer-red';
-        } else if (task.status === 'shipping') {
-            if (isCollapsed) {
-                const diffMs = Date.now() - (task.shipping_at || Date.now());
-                timerText = formatTimeShort(diffMs, 'shipping');
-            } else {
-                timerText = formatCompletedTime(task.shipping_at, '📦 已打包完成');
-            }
-            timerClass = 'timer-green';
-        } else {
-            // 待办、进行中等倒计时
-            if (isCollapsed) {
-                timerText = formatTimeShort(diff, 'countdown');
-            } else {
-                timerText = formatTimeLeft(diff);
-            }
-            timerClass = getTimerColor(diff);
-        }
-
-        if (isCollapsed) {
-            // 折叠：单行布局
-            const imgHtml = task.image_url
-                ? `<img class="thumb" src="${task.image_url}" onclick="event.stopPropagation(); openImageModal('${task.image_url}')" title="点击查看大图" />`
-                : `<div class="thumb" style="display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:0.6rem;color:#999;">无图</div>`;
-            const titleHtml = `<span class="title" title="${task.name}">${truncateTitle(task.name, 8)}</span>`;
-            const timerHtml = `<span class="timer ${timerClass}">${timerText}</span>`;
-            const toggleHtml = `<button class="toggle-btn" onclick="toggleCollapse(${task.id})">▶</button>`;
-
-            div.innerHTML = `
-                <div class="task-collapsed">
-                    ${imgHtml}
-                    ${titleHtml}
-                    ${timerHtml}
-                    ${toggleHtml}
+    <!-- 创建订单弹窗 -->
+    <div id="orderModal" class="modal">
+        <div class="modal-box">
+            <h3 id="orderModalTitle">📝 创建订单</h3>
+            <form id="orderForm">
+                <input id="orderCustomer" placeholder="客户名" required />
+                <input id="orderNumber" placeholder="订单编号" required />
+                <input id="orderProduct" placeholder="产品名" required />
+                <div class="form-row">
+                    <input id="orderSize" placeholder="尺寸" />
+                    <input id="orderQuantity" placeholder="数量" type="number" />
                 </div>
-            `;
-        } else {
-            // 展开：纵向布局
-            const imgHtml = task.image_url
-                ? `<img class="img" src="${task.image_url}" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />`
-                : `<div style="font-size:0.7rem; color:#7d9ab5;">📷 无图片</div>`;
-            const titleHtml = `<div class="title">${task.name}</div>`;
-            const timerHtml = `<span class="timer ${timerClass}">${timerText}</span>`;
-            const actionsHtml = `
-                <div class="actions">
-                    <button onclick="uploadImg(${task.id})">🖼️ 图片</button>
-                    <button onclick="openEdit(${task.id})">✏️ 修改</button>
-                    <button onclick="deleteTask(${task.id})">🗑️ 删除</button>
-                    <button class="toggle-btn" onclick="toggleCollapse(${task.id})" style="background:transparent;border:none;cursor:pointer;color:#888;">▼</button>
+                <div class="form-row">
+                    <input id="orderTotal" placeholder="总金额" type="number" step="0.01" />
+                    <input id="orderFreight" placeholder="运费" type="number" step="0.01" />
                 </div>
-            `;
-            div.innerHTML = `
-                <div class="task-expanded">
-                    ${imgHtml}
-                    ${titleHtml}
-                    ${timerHtml}
-                    ${actionsHtml}
-                </div>
-            `;
-        }
+                <textarea id="orderRemarks" placeholder="备注" rows="2"></textarea>
+            </form>
+            <div class="modal-btns">
+                <button id="orderModalSubmitBtn" onclick="saveOrder()" class="primary">保存订单</button>
+                <button onclick="closeOrderModal()" class="secondary">取消</button>
+            </div>
+        </div>
+    </div>
 
-        let targetCol;
-        if (task.status === 'todo') targetCol = dom.todo;
-        else if (task.status === 'doing') targetCol = dom.doing;
-        else if (task.status === 'done') targetCol = dom.done;
-        else if (task.status === 'shipping') targetCol = dom.shipping;
-        else if (task.status === 'archived') targetCol = dom.archived;
-        else targetCol = dom.todo;
-        targetCol.appendChild(div);
-    });
-    initSortable();
-}
+    <!-- 查看订单弹窗 -->
+    <div id="viewOrderModal" class="modal">
+        <div class="modal-box">
+            <h3>
+                📋 订单列表
+                <span id="viewOrderTaskName" style="font-weight:normal;font-size:0.9rem;color:#555;"></span>
+            </h3>
+            <div id="orderListContainer" class="order-list">
+                <p style="color:#999;">暂无订单</p>
+            </div>
+            <div class="modal-btns">
+                <button onclick="closeViewOrderModal()" class="secondary">关闭</button>
+            </div>
+        </div>
+    </div>
 
-// 折叠/展开切换
-window.toggleCollapse = function(id) {
-    state.collapsedMap[id] = !state.collapsedMap[id];
-    renderTasks(state.cachedTasks);
-};
+    <!-- 大图预览 -->
+    <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+        <span class="close-btn">&times;</span>
+        <img id="previewImage" src="" alt="大图预览" />
+    </div>
 
-// ============================================================
-// 8. 加载任务
-// ============================================================
-async function loadTasks(silent = false) {
-    try {
-        if (!silent || state.isFirstLoad) {
-            dom.status.textContent = '⏳ 加载中...';
-        }
-        const res = await fetchSupabase('/tasks?select=*&order=time.asc');
-        const data = await res.json();
-        state.cachedTasks = data || [];
-        state.cachedTasks.forEach(task => {
-            if (state.collapsedMap[task.id] === undefined) {
-                state.collapsedMap[task.id] = true;
-            }
-        });
-        renderTasks(state.cachedTasks);
-        if (!silent || state.isFirstLoad) {
-            dom.status.textContent = '✅ 已同步';
-            dom.status.style.background = '#dcfce7';
-            state.isFirstLoad = false;
-        }
-        checkAndNotify();
-    } catch (err) {
-        console.error('加载失败:', err);
-        dom.status.textContent = '❌ 连接失败';
-        dom.status.style.background = '#fee2e2';
-        if (!silent) alert('无法连接 Supabase，请检查网络或配置。');
-    }
-}
+    <script>
+        // ============================================================
+        // 1. 配置
+        // ============================================================
+        const SUPABASE_URL = 'https://iconjenlrbaqowhyfysq.supabase.co';
+        const SUPABASE_ANON_KEY =
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imljb25qZW5scmJhcW93aHlmeXNxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0Mjc5MDMsImV4cCI6MjA5ODAwMzkwM30.dB6GxRS704yNn8YPRd5jt-rTpW-Vs1u86R1Ca2RD0EU';
 
-// ============================================================
-// 9. 增删改
-// ============================================================
-function addTask() {
-    const name = dom.name.value.trim();
-    const timeVal = dom.time.value;
-    if (!name) return alert('请输入任务名称');
-    if (!timeVal) return alert('请选择截止时间');
-    const timestamp = new Date(timeVal).getTime();
-    if (isNaN(timestamp)) return alert('时间格式无效');
-    const newTask = {
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        name,
-        time: timestamp,
-        status: 'todo',
-        image_url: null,
-        completed_at: null,
-        shipping_at: null,
-    };
-    fetchSupabase('/tasks', {
-        method: 'POST',
-        body: JSON.stringify([newTask])
-    })
-    .then(() => {
-        dom.name.value = '';
-        dom.time.value = '';
-        state.collapsedMap[newTask.id] = true;
-        loadTasks(false);
-    })
-    .catch(err => alert('新增失败: ' + err.message));
-}
-
-function deleteTask(id) {
-    if (!confirm('确定删除该任务吗？')) return;
-    fetchSupabase('/tasks?select=image_url&id=eq.' + id)
-        .then(res => res.json())
-        .then(data => {
-            const task = Array.isArray(data) ? data[0] : data;
-            if (task && task.image_url) {
-                const fileName = `${id}.jpg`;
-                fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
-                    method: 'DELETE',
-                    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
-                }).catch(err => console.warn('删除图片失败:', err));
-            }
-            return fetchSupabase('/tasks?id=eq.' + id, { method: 'DELETE' });
-        })
-        .then(() => {
-            delete state.collapsedMap[id];
-            loadTasks(false);
-        })
-        .catch(err => {
-            console.error('删除失败:', err);
-            alert('删除失败: ' + err.message);
-        });
-}
-
-function openEdit(id) {
-    fetchSupabase('/tasks?select=*&id=eq.' + id)
-        .then(res => res.json())
-        .then(([data]) => {
-            if (!data) throw new Error('任务不存在');
-            state.editId = id;
-            dom.editName.value = data.name;
-            const dt = new Date(data.time);
-            const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000);
-            dom.editTime.value = local.toISOString().slice(0, 16);
-            dom.modal.style.display = 'flex';
-        })
-        .catch(err => alert('获取任务失败: ' + err.message));
-}
-function saveEdit() {
-    if (state.editId === null) return;
-    const newName = dom.editName.value.trim();
-    const newTime = dom.editTime.value;
-    if (!newName) return alert('名称不能为空');
-    if (!newTime) return alert('请选择时间');
-    const ts = new Date(newTime).getTime();
-    if (isNaN(ts)) return alert('时间无效');
-    fetchSupabase('/tasks?id=eq.' + state.editId, {
-        method: 'PATCH',
-        body: JSON.stringify({ name: newName, time: ts })
-    })
-    .then(() => {
-        closeModal();
-        loadTasks(false);
-    })
-    .catch(err => alert('更新失败: ' + err.message));
-}
-function closeModal() {
-    dom.modal.style.display = 'none';
-    state.editId = null;
-}
-
-// ============================================================
-// 10. 图片上传
-// ============================================================
-function uploadImg(id) {
-    state.currentImgId = id;
-    dom.file.click();
-}
-dom.file.addEventListener('change', async function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
-        alert('请选择图片文件');
-        dom.file.value = '';
-        return;
-    }
-    try {
-        const compressedBlob = await compressImage(file, 800, 0.7);
-        const fileName = `${state.currentImgId}.jpg`;
-        const uploadRes = await fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
-            method: 'PUT',
-            headers: {
-                'apikey': SUPABASE_ANON_KEY,
-                'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-                'Content-Type': 'image/jpeg',
-                'x-upsert': 'true'
-            },
-            body: compressedBlob
-        });
-        if (!uploadRes.ok) {
-            const errText = await uploadRes.text();
-            throw new Error('上传图片失败: ' + errText);
-        }
-        const publicUrl = SUPABASE_URL + '/storage/v1/object/public/task-images/' + fileName + '?v=' + Date.now();
-        await fetchSupabase('/tasks?id=eq.' + state.currentImgId, {
-            method: 'PATCH',
-            body: JSON.stringify({ image_url: publicUrl })
-        });
-        dom.file.value = '';
-        await loadTasks(false);
-    } catch (err) {
-        alert('图片上传失败: ' + err.message);
-        dom.file.value = '';
-    }
-});
-function compressImage(file, maxSize, quality) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                let w = img.width, h = img.height;
-                if (w > h) {
-                    if (w > maxSize) { h *= maxSize / w; w = maxSize; }
-                } else {
-                    if (h > maxSize) { w *= maxSize / h; h = maxSize; }
-                }
-                canvas.width = Math.round(w);
-                canvas.height = Math.round(h);
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                canvas.toBlob((blob) => {
-                    if (blob) resolve(blob);
-                    else reject(new Error('压缩失败'));
-                }, 'image/jpeg', quality);
-            };
-            img.onerror = reject;
-            img.src = e.target.result;
+        const API_URL = SUPABASE_URL + '/rest/v1';
+        const HEADERS = {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json'
         };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
 
-// ============================================================
-// 11. 通知 & 自动逾期移动
-// ============================================================
-function requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission();
-    }
-}
-function checkAndNotify() {
-    if (!('Notification' in window)) return;
-    if (Notification.permission !== 'granted') return;
-    const now = Date.now();
-    state.cachedTasks.forEach(task => {
-        if (task.status === 'archived' || task.status === 'shipping' || task.status === 'done') return;
-        const diff = task.time - now;
-        if (diff > 0 && diff < 21600000) {
-            if (!state.notifiedTasks.has(task.id)) {
-                state.notifiedTasks.add(task.id);
-                new Notification('⏰ 任务即将到期', {
-                    body: `任务 "${task.name}" 剩余时间不足6小时！`,
-                    icon: task.image_url || undefined
-                });
-            }
+        // ============================================================
+        // 2. DOM 引用
+        // ============================================================
+        const dom = {
+            todo: document.getElementById('todo'),
+            doing: document.getElementById('doing'),
+            done: document.getElementById('done'),
+            shipping: document.getElementById('shipping'),
+            archived: document.getElementById('archived'),
+            name: document.getElementById('name'),
+            time: document.getElementById('time'),
+            file: document.getElementById('file'),
+            modal: document.getElementById('modal'),
+            editName: document.getElementById('editName'),
+            editTime: document.getElementById('editTime'),
+            status: document.getElementById('statusBadge'),
+            imageModal: document.getElementById('imageModal'),
+            previewImage: document.getElementById('previewImage'),
+            stats: {
+                todo: document.getElementById('stat-todo'),
+                doing: document.getElementById('stat-doing'),
+                done: document.getElementById('stat-done'),
+                shipping: document.getElementById('stat-shipping'),
+                archived: document.getElementById('stat-archived'),
+            },
+            orderModal: document.getElementById('orderModal'),
+            viewOrderModal: document.getElementById('viewOrderModal'),
+            orderListContainer: document.getElementById('orderListContainer'),
+            viewOrderTaskName: document.getElementById('viewOrderTaskName'),
+            orderCustomer: document.getElementById('orderCustomer'),
+            orderNumber: document.getElementById('orderNumber'),
+            orderProduct: document.getElementById('orderProduct'),
+            orderSize: document.getElementById('orderSize'),
+            orderQuantity: document.getElementById('orderQuantity'),
+            orderTotal: document.getElementById('orderTotal'),
+            orderFreight: document.getElementById('orderFreight'),
+            orderRemarks: document.getElementById('orderRemarks'),
+            orderModalTitle: document.getElementById('orderModalTitle'),
+            orderModalSubmitBtn: document.getElementById('orderModalSubmitBtn'),
+        };
+
+        // ============================================================
+        // 3. 状态
+        // ============================================================
+        const state = {
+            editId: null,
+            currentImgId: null,
+            cachedTasks: [],
+            isFirstLoad: true,
+            notifiedTasks: new Set(),
+            sortableInstances: [],
+            collapsedMap: {},
+            currentOrderTaskId: null,
+            _orderCache: [],
+            _currentViewTaskId: null,
+        };
+
+        // ============================================================
+        // 4. 工具函数
+        // ============================================================
+        function formatTimeLeft(ms) {
+            if (ms <= 0) return '⏳ 已结束';
+            const s = Math.floor(ms / 1000);
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = Math.floor(s % 60);
+            let parts = [];
+            if (d) parts.push(d + '天');
+            if (h) parts.push(h + '小时');
+            if (m) parts.push(m + '分');
+            parts.push(sec + '秒');
+            return parts.join(' ');
         }
-        if (diff <= 0 || task.status === 'done') {
-            state.notifiedTasks.delete(task.id);
-        }
-    });
-}
 
-async function autoMoveExpiredTasks() {
-    try {
-        const now = Date.now();
-        let hasChanges = false;
-        const tasksToMove = state.cachedTasks.filter(task => {
-            if (task.status === 'archived' || task.status === 'done' || task.status === 'shipping') return false;
-            return task.time - now <= 0;
-        });
-
-        if (tasksToMove.length > 0) {
-            console.log(`🔍 发现 ${tasksToMove.length} 个任务已超时，即将移动到“已逾期”...`);
-        }
-
-        for (const task of tasksToMove) {
-            console.log(`⏳ 移动任务: "${task.name}" (ID: ${task.id})`);
-            await updateTaskStatus(task.id, 'done');
-            console.log(`✅ 任务 "${task.name}" 已逾期`);
-            hasChanges = true;
-            state.notifiedTasks.delete(task.id);
-        }
-
-        if (hasChanges) {
-            await loadTasks(false);
-            console.log('🔄 界面已刷新，逾期任务已进入“已逾期”列');
-        }
-    } catch (err) {
-        console.error('❌ 自动逾期移动失败:', err);
-    }
-}
-
-// ============================================================
-// 12. 每秒更新计时器（修复闪烁：跳过 archived 状态）
-// ============================================================
-setInterval(async () => {
-    if (state.cachedTasks.length > 0) {
-        const now = Date.now();
-        document.querySelectorAll('.task').forEach(el => {
-            const id = parseInt(el.dataset.id);
-            const task = state.cachedTasks.find(t => t.id === id);
-            if (!task) return;
-
-            const timerSpan = el.querySelector('.timer');
-            if (!timerSpan) return;
-
-            // 跳过 archived 状态，避免不必要的 DOM 更新（防止闪烁）
-            if (task.status === 'archived') return;
-
-            const diff = task.time - now;
-            const isCollapsed = el.querySelector('.task-collapsed') !== null;
-
-            if (task.status === 'done') {
-                if (isCollapsed) {
-                    const diffMs = Date.now() - (task.completed_at || Date.now());
-                    timerSpan.textContent = formatTimeShort(diffMs, 'done');
-                } else {
-                    timerSpan.textContent = formatCompletedTime(task.completed_at, '❗ 已逾期');
-                }
-                timerSpan.className = 'timer timer-red';
-            } else if (task.status === 'shipping') {
-                if (isCollapsed) {
-                    const diffMs = Date.now() - (task.shipping_at || Date.now());
-                    timerSpan.textContent = formatTimeShort(diffMs, 'shipping');
-                } else {
-                    timerSpan.textContent = formatCompletedTime(task.shipping_at, '📦 已打包完成');
-                }
-                timerSpan.className = 'timer timer-green';
+        function formatTimeShort(ms, type) {
+            if (ms <= 0) return '即将';
+            const s = Math.floor(ms / 1000);
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            let parts = [];
+            if (d > 0) parts.push(d + '天');
+            if (h > 0) parts.push(h + '时');
+            if (m > 0 && d === 0) parts.push(m + '分');
+            if (parts.length === 0) parts.push('即将');
+            if (type === 'done') {
+                return '逾期 ' + (parts.length ? parts.join('') : '即将');
+            } else if (type === 'shipping') {
+                return '打包 ' + (parts.length ? parts.join('') : '刚刚');
             } else {
-                // 待办、进行中
-                if (isCollapsed) {
-                    timerSpan.textContent = formatTimeShort(diff, 'countdown');
-                } else {
-                    timerSpan.textContent = formatTimeLeft(diff);
-                }
-                timerSpan.className = `timer ${getTimerColor(diff)}`;
+                return parts.join('');
             }
-        });
-    }
-    await autoMoveExpiredTasks();
-    checkAndNotify();
-}, 1000);
+        }
 
-// ============================================================
-// 13. 拖拽排序
-// ============================================================
-function initSortable() {
-    state.sortableInstances.forEach(inst => inst.destroy());
-    state.sortableInstances = [];
-    const cols = [dom.todo, dom.doing, dom.done, dom.shipping, dom.archived];
-    cols.forEach(col => {
-        const sortable = new Sortable(col, {
-            group: 'tasks',
-            animation: 150,
-            ghostClass: 'sortable-ghost',
-            dragClass: 'sortable-drag',
-            onEnd: async function(evt) {
-                const taskId = parseInt(evt.item.dataset.id);
-                const fromId = evt.from.id;
-                const targetId = evt.to.id;
+        function formatCompletedTime(completedAt, label = '❗ 已逾期') {
+            if (!completedAt) return label;
+            const now = Date.now();
+            const diff = now - completedAt;
+            if (diff < 0) return label;
+            const s = Math.floor(diff / 1000);
+            const d = Math.floor(s / 86400);
+            const h = Math.floor((s % 86400) / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            let parts = [];
+            if (d) parts.push(d + '天');
+            if (h) parts.push(h + '小时');
+            if (m) parts.push(m + '分');
+            parts.push(sec + '秒');
+            return label + ' ' + parts.join('');
+        }
 
-                if (fromId === 'archived' && targetId !== 'archived') {
-                    alert('已归档的任务不能移出，只能留在归档中。');
-                    await loadTasks(false);
-                    return;
+        function getTimerColor(ms) {
+            const days = ms / 86400000;
+            if (days < 1) return 'timer-red';
+            if (days <= 2) return 'timer-yellow';
+            return 'timer-blue';
+        }
+
+        function truncateTitle(title, maxLength = 8) {
+            if (!title) return '';
+            if (title.length <= maxLength) return title;
+            return title.substring(0, maxLength) + '…';
+        }
+
+        function safe(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // ============================================================
+        // 5. 大图模态框
+        // ============================================================
+        function openImageModal(url) {
+            dom.previewImage.src = url;
+            dom.imageModal.style.display = 'flex';
+        }
+
+        function closeImageModal() {
+            dom.imageModal.style.display = 'none';
+        }
+
+        // ============================================================
+        // 6. 数据库操作
+        // ============================================================
+        async function fetchSupabase(endpoint, options = {}) {
+            const res = await fetch(API_URL + endpoint, {
+                ...options,
+                headers: { ...HEADERS, ...(options.headers || {}) }
+            });
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`HTTP ${res.status}: ${text}`);
+            }
+            return res;
+        }
+
+        async function updateTaskStatus(id, newStatus) {
+            const updateData = { status: newStatus };
+            if (newStatus === 'done') {
+                updateData.completed_at = Date.now();
+                updateData.shipping_at = null;
+            } else if (newStatus === 'shipping') {
+                updateData.shipping_at = Date.now();
+                updateData.completed_at = null;
+            } else {
+                updateData.completed_at = null;
+                updateData.shipping_at = null;
+            }
+            await fetchSupabase('/tasks?id=eq.' + id, {
+                method: 'PATCH',
+                body: JSON.stringify(updateData)
+            });
+        }
+
+        async function fetchOrders(taskId) {
+            const res = await fetchSupabase(`/orders?select=*&task_id=eq.${taskId}&order=created_at.desc`);
+            return await res.json();
+        }
+
+        async function createOrder(taskId, data) {
+            const newOrder = {
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                task_id: taskId,
+                customer_name: data.customerName,
+                order_number: data.orderNumber,
+                product_name: data.productName,
+                size: data.size || null,
+                quantity: data.quantity ? parseInt(data.quantity) : null,
+                total_amount: data.totalAmount ? parseFloat(data.totalAmount) : null,
+                freight: data.freight ? parseFloat(data.freight) : null,
+                remarks: data.remarks || null,
+            };
+            await fetchSupabase('/orders', {
+                method: 'POST',
+                body: JSON.stringify([newOrder])
+            });
+            return newOrder;
+        }
+
+        async function updateOrder(orderId, data) {
+            const updateData = {
+                customer_name: data.customerName,
+                order_number: data.orderNumber,
+                product_name: data.productName,
+                size: data.size || null,
+                quantity: data.quantity ? parseInt(data.quantity) : null,
+                total_amount: data.totalAmount ? parseFloat(data.totalAmount) : null,
+                freight: data.freight ? parseFloat(data.freight) : null,
+                remarks: data.remarks || null,
+            };
+            await fetchSupabase('/orders?id=eq.' + orderId, {
+                method: 'PATCH',
+                body: JSON.stringify(updateData)
+            });
+        }
+
+        // ============================================================
+        // 7. 渲染任务（折叠时隐藏订单按钮）
+        // ============================================================
+        function renderTasks(tasks) {
+            dom.todo.innerHTML = '<h3>📌 待办</h3>';
+            dom.doing.innerHTML = '<h3>⚡ 进行中</h3>';
+            dom.done.innerHTML = '<h3>❗ 已逾期</h3>';
+            dom.shipping.innerHTML = '<h3>📦 已打包待发货</h3>';
+            dom.archived.innerHTML = '<h3>📦 已发货</h3>';
+
+            const counts = { todo: 0, doing: 0, done: 0, shipping: 0, archived: 0 };
+            if (tasks && tasks.length) {
+                tasks.forEach(t => { if (counts.hasOwnProperty(t.status)) counts[t.status]++; });
+            }
+            dom.stats.todo.textContent = counts.todo;
+            dom.stats.doing.textContent = counts.doing;
+            dom.stats.done.textContent = counts.done;
+            dom.stats.shipping.textContent = counts.shipping;
+            dom.stats.archived.textContent = counts.archived;
+
+            if (!tasks || tasks.length === 0) {
+                initSortable();
+                return;
+            }
+
+            const now = Date.now();
+            tasks.forEach(task => {
+                const diff = task.time - now;
+                const div = document.createElement('div');
+                div.className = 'task';
+                div.dataset.id = task.id;
+
+                const isCollapsed = state.collapsedMap[task.id] !== undefined ? state.collapsedMap[task.id] : true;
+
+                let timerText, timerClass;
+                if (task.status === 'archived') {
+                    timerText = isCollapsed ? '已发货' : '📦 已发货';
+                    timerClass = 'timer-gray';
+                } else if (task.status === 'done') {
+                    if (isCollapsed) {
+                        const diffMs = Date.now() - (task.completed_at || Date.now());
+                        timerText = formatTimeShort(diffMs, 'done');
+                    } else {
+                        timerText = formatCompletedTime(task.completed_at, '❗ 已逾期');
+                    }
+                    timerClass = 'timer-red';
+                } else if (task.status === 'shipping') {
+                    if (isCollapsed) {
+                        const diffMs = Date.now() - (task.shipping_at || Date.now());
+                        timerText = formatTimeShort(diffMs, 'shipping');
+                    } else {
+                        timerText = formatCompletedTime(task.shipping_at, '📦 已打包完成');
+                    }
+                    timerClass = 'timer-green';
+                } else {
+                    if (isCollapsed) {
+                        timerText = formatTimeShort(diff, 'countdown');
+                    } else {
+                        timerText = formatTimeLeft(diff);
+                    }
+                    timerClass = getTimerColor(diff);
                 }
 
-                let newStatus;
-                if (targetId === 'todo') newStatus = 'todo';
-                else if (targetId === 'doing') newStatus = 'doing';
-                else if (targetId === 'done') newStatus = 'done';
-                else if (targetId === 'shipping') newStatus = 'shipping';
-                else if (targetId === 'archived') newStatus = 'archived';
-                else return;
+                // 订单按钮（仅在展开时显示）
+                const orderBtnsHtml = `
+                    <button class="order-btn" onclick="openCreateOrder(${task.id})">📝 创建订单</button>
+                    <button class="order-btn" onclick="viewOrders(${task.id})">📋 查看订单</button>
+                `;
+
+                if (isCollapsed) {
+                    // 折叠状态：只显示图片、标题、计时器、展开按钮（不显示任何操作按钮）
+                    const imgHtml = task.image_url ?
+                        `<img class="thumb" src="${task.image_url}" onclick="event.stopPropagation(); openImageModal('${task.image_url}')" title="点击查看大图" />` :
+                        `<div class="thumb" style="display:flex;align-items:center;justify-content:center;background:#f0f0f0;font-size:0.6rem;color:#999;">无图</div>`;
+                    const titleHtml = `<span class="title" title="${task.name}">${truncateTitle(task.name, 8)}</span>`;
+                    const timerHtml = `<span class="timer ${timerClass}">${timerText}</span>`;
+                    const toggleHtml = `<button class="toggle-btn" onclick="toggleCollapse(${task.id})">▶</button>`;
+
+                    div.innerHTML = `
+                        <div class="task-collapsed">
+                            ${imgHtml}
+                            ${titleHtml}
+                            ${timerHtml}
+                            ${toggleHtml}
+                        </div>
+                    `;
+                } else {
+                    // 展开状态：显示图片、标题、计时器、所有操作按钮（含订单按钮）
+                    const imgHtml = task.image_url ?
+                        `<img class="img" src="${task.image_url}" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />` :
+                        `<div style="font-size:0.7rem; color:#7d9ab5;">📷 无图片</div>`;
+                    const titleHtml = `<div class="title">${task.name}</div>`;
+                    const timerHtml = `<span class="timer ${timerClass}">${timerText}</span>`;
+                    const actionsHtml = `
+                        <div class="actions">
+                            <button onclick="uploadImg(${task.id})">🖼️ 图片</button>
+                            <button onclick="openEdit(${task.id})">✏️ 修改</button>
+                            <button onclick="deleteTask(${task.id})">🗑️ 删除</button>
+                            ${orderBtnsHtml}
+                            <button class="toggle-btn" onclick="toggleCollapse(${task.id})" style="background:transparent;border:none;cursor:pointer;color:#888;">▼</button>
+                        </div>
+                    `;
+                    div.innerHTML = `
+                        <div class="task-expanded">
+                            ${imgHtml}
+                            ${titleHtml}
+                            ${timerHtml}
+                            ${actionsHtml}
+                        </div>
+                    `;
+                }
+
+                let targetCol;
+                if (task.status === 'todo') targetCol = dom.todo;
+                else if (task.status === 'doing') targetCol = dom.doing;
+                else if (task.status === 'done') targetCol = dom.done;
+                else if (task.status === 'shipping') targetCol = dom.shipping;
+                else if (task.status === 'archived') targetCol = dom.archived;
+                else targetCol = dom.todo;
+                targetCol.appendChild(div);
+            });
+            initSortable();
+        }
+
+        window.toggleCollapse = function(id) {
+            state.collapsedMap[id] = !state.collapsedMap[id];
+            renderTasks(state.cachedTasks);
+        };
+
+        // ============================================================
+        // 8. 订单相关操作（创建、查看、内联编辑）
+        // ============================================================
+
+        window.openCreateOrder = function(taskId) {
+            state.currentOrderTaskId = taskId;
+            dom.orderCustomer.value = '';
+            dom.orderNumber.value = '';
+            dom.orderProduct.value = '';
+            dom.orderSize.value = '';
+            dom.orderQuantity.value = '';
+            dom.orderTotal.value = '';
+            dom.orderFreight.value = '';
+            dom.orderRemarks.value = '';
+            dom.orderModalTitle.textContent = '📝 创建订单';
+            dom.orderModalSubmitBtn.textContent = '保存订单';
+            dom.orderModal.style.display = 'flex';
+        };
+
+        window.saveOrder = async function() {
+            const taskId = state.currentOrderTaskId;
+            if (!taskId) return alert('任务ID丢失，请刷新重试。');
+
+            const customerName = dom.orderCustomer.value.trim();
+            const orderNumber = dom.orderNumber.value.trim();
+            const productName = dom.orderProduct.value.trim();
+            if (!customerName || !orderNumber || !productName) {
+                return alert('请至少填写客户名、订单编号和产品名！');
+            }
+
+            const data = {
+                customerName,
+                orderNumber,
+                productName,
+                size: dom.orderSize.value.trim(),
+                quantity: dom.orderQuantity.value.trim(),
+                totalAmount: dom.orderTotal.value.trim(),
+                freight: dom.orderFreight.value.trim(),
+                remarks: dom.orderRemarks.value.trim(),
+            };
+
+            try {
+                await createOrder(taskId, data);
+                alert('✅ 订单创建成功！');
+                closeOrderModal();
+                if (state._currentViewTaskId && state._currentViewTaskId === taskId) {
+                    await viewOrders(taskId);
+                }
+            } catch (err) {
+                alert('❌ 创建订单失败：' + err.message);
+                console.error(err);
+            }
+        };
+
+        function closeOrderModal() {
+            dom.orderModal.style.display = 'none';
+            state.currentOrderTaskId = null;
+        }
+
+        // ---- 查看订单（内联编辑，无复制按钮） ----
+        window.viewOrders = async function(taskId) {
+            try {
+                const orders = await fetchOrders(taskId);
+                state._orderCache = orders || [];
+                state._currentViewTaskId = taskId;
 
                 const task = state.cachedTasks.find(t => t.id === taskId);
-                if (task) {
-                    task.status = newStatus;
-                    if (newStatus === 'done') {
-                        task.completed_at = Date.now();
-                        task.shipping_at = null;
-                    } else if (newStatus === 'shipping') {
-                        task.shipping_at = Date.now();
-                        task.completed_at = null;
-                    } else {
-                        task.completed_at = null;
-                        task.shipping_at = null;
-                    }
-                    renderTasks(state.cachedTasks);
-                }
+                dom.viewOrderTaskName.textContent = task ? `（${task.name}）` : '';
 
-                try {
-                    await updateTaskStatus(taskId, newStatus);
-                } catch (err) {
-                    console.error('拖拽保存失败:', err);
-                    alert('保存状态失败，已回退。错误: ' + err.message);
-                    await loadTasks(false);
+                const container = dom.orderListContainer;
+                if (!orders || orders.length === 0) {
+                    container.innerHTML = '<p style="color:#999;">暂无订单</p>';
+                } else {
+                    let html = '';
+                    orders.forEach((o, idx) => {
+                        const fields = [
+                            { label: '客户名', field: 'customer_name', value: o.customer_name || '' },
+                            { label: '订单编号', field: 'order_number', value: o.order_number || '' },
+                            { label: '产品名', field: 'product_name', value: o.product_name || '' },
+                            { label: '尺寸', field: 'size', value: o.size || '' },
+                            { label: '数量', field: 'quantity', value: o.quantity || '' },
+                            { label: '总金额', field: 'total_amount', value: o.total_amount || '' },
+                            { label: '运费', field: 'freight', value: o.freight || '' },
+                            { label: '备注', field: 'remarks', value: o.remarks || '', isTextarea: true },
+                        ];
+
+                        html += `<div class="order-item" data-order-id="${o.id}">`;
+                        html += `<strong>订单 #${idx+1}</strong> <span style="color:#999;font-size:0.8rem;">${new Date(o.created_at).toLocaleString()}</span><br>`;
+
+                        fields.forEach(f => {
+                            const escaped = safe(f.value);
+                            const inputTag = f.isTextarea ?
+                                `<textarea class="order-textarea" data-field="${f.field}" disabled>${escaped}</textarea>` :
+                                `<input class="order-input" data-field="${f.field}" value="${escaped}" disabled />`;
+                            html += `<strong>${f.label}：</strong> ${inputTag}<br>`;
+                        });
+
+                        // 修改/保存 按钮
+                        html += `<button class="edit-toggle-btn" onclick="toggleEditOrder(${o.id})">修改</button>`;
+                        html += `</div>`;
+                    });
+                    container.innerHTML = html;
                 }
+                dom.viewOrderModal.style.display = 'flex';
+            } catch (err) {
+                alert('获取订单失败：' + err.message);
+                console.error(err);
+            }
+        };
+
+        // ---- 切换订单编辑状态 ----
+        window.toggleEditOrder = function(orderId) {
+            const item = document.querySelector(`.order-item[data-order-id="${orderId}"]`);
+            if (!item) return;
+            const inputs = item.querySelectorAll('.order-input, .order-textarea');
+            const btn = item.querySelector('.edit-toggle-btn');
+            const isEditing = btn.textContent === '保存';
+
+            if (isEditing) {
+                // 保存
+                const data = {
+                    customerName: item.querySelector('[data-field="customer_name"]').value,
+                    orderNumber: item.querySelector('[data-field="order_number"]').value,
+                    productName: item.querySelector('[data-field="product_name"]').value,
+                    size: item.querySelector('[data-field="size"]').value,
+                    quantity: item.querySelector('[data-field="quantity"]').value,
+                    totalAmount: item.querySelector('[data-field="total_amount"]').value,
+                    freight: item.querySelector('[data-field="freight"]').value,
+                    remarks: item.querySelector('[data-field="remarks"]').value,
+                };
+                if (!data.customerName || !data.orderNumber || !data.productName) {
+                    alert('客户名、订单编号、产品名不能为空！');
+                    return;
+                }
+                updateOrder(orderId, data).then(() => {
+                    inputs.forEach(inp => inp.disabled = true);
+                    btn.textContent = '修改';
+                    const cached = state._orderCache.find(o => o.id === orderId);
+                    if (cached) {
+                        cached.customer_name = data.customerName;
+                        cached.order_number = data.orderNumber;
+                        cached.product_name = data.productName;
+                        cached.size = data.size;
+                        cached.quantity = data.quantity;
+                        cached.total_amount = data.totalAmount;
+                        cached.freight = data.freight;
+                        cached.remarks = data.remarks;
+                    }
+                    alert('✅ 订单更新成功！');
+                }).catch(err => {
+                    alert('❌ 更新失败：' + err.message);
+                });
+            } else {
+                // 启用编辑
+                inputs.forEach(inp => inp.disabled = false);
+                btn.textContent = '保存';
+                const firstInput = item.querySelector('.order-input, .order-textarea');
+                if (firstInput) firstInput.focus();
+            }
+        };
+
+        // ---- 关闭查看订单弹窗 ----
+        function closeViewOrderModal() {
+            dom.viewOrderModal.style.display = 'none';
+            state._currentViewTaskId = null;
+        }
+
+        dom.orderModal.addEventListener('click', function(e) {
+            if (e.target === dom.orderModal) closeOrderModal();
+        });
+        dom.viewOrderModal.addEventListener('click', function(e) {
+            if (e.target === dom.viewOrderModal) closeViewOrderModal();
+        });
+
+        // ============================================================
+        // 9. 加载任务
+        // ============================================================
+        async function loadTasks(silent = false) {
+            try {
+                if (!silent || state.isFirstLoad) {
+                    dom.status.textContent = '⏳ 加载中...';
+                }
+                const res = await fetchSupabase('/tasks?select=*&order=time.asc');
+                const data = await res.json();
+                state.cachedTasks = data || [];
+                state.cachedTasks.forEach(task => {
+                    if (state.collapsedMap[task.id] === undefined) {
+                        state.collapsedMap[task.id] = true;
+                    }
+                });
+                renderTasks(state.cachedTasks);
+                if (!silent || state.isFirstLoad) {
+                    dom.status.textContent = '✅ 已同步';
+                    dom.status.style.background = '#dcfce7';
+                    state.isFirstLoad = false;
+                }
+                checkAndNotify();
+            } catch (err) {
+                console.error('加载失败:', err);
+                dom.status.textContent = '❌ 连接失败';
+                dom.status.style.background = '#fee2e2';
+                if (!silent) alert('无法连接 Supabase，请检查网络或配置。');
+            }
+        }
+
+        // ============================================================
+        // 10. 任务增删改
+        // ============================================================
+        function addTask() {
+            const name = dom.name.value.trim();
+            const timeVal = dom.time.value;
+            if (!name) return alert('请输入任务名称');
+            if (!timeVal) return alert('请选择截止时间');
+            const timestamp = new Date(timeVal).getTime();
+            if (isNaN(timestamp)) return alert('时间格式无效');
+            const newTask = {
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                name,
+                time: timestamp,
+                status: 'todo',
+                image_url: null,
+                completed_at: null,
+                shipping_at: null,
+            };
+            fetchSupabase('/tasks', {
+                    method: 'POST',
+                    body: JSON.stringify([newTask])
+                })
+                .then(() => {
+                    dom.name.value = '';
+                    dom.time.value = '';
+                    state.collapsedMap[newTask.id] = true;
+                    loadTasks(false);
+                })
+                .catch(err => alert('新增失败: ' + err.message));
+        }
+
+        function deleteTask(id) {
+            if (!confirm('确定删除该任务吗？')) return;
+            fetchSupabase('/tasks?id=eq.' + id, { method: 'DELETE' })
+                .then(() => {
+                    delete state.collapsedMap[id];
+                    loadTasks(false);
+                })
+                .catch(err => {
+                    console.error('删除失败:', err);
+                    alert('删除失败: ' + err.message);
+                });
+        }
+
+        function openEdit(id) {
+            fetchSupabase('/tasks?select=*&id=eq.' + id)
+                .then(res => res.json())
+                .then(([data]) => {
+                    if (!data) throw new Error('任务不存在');
+                    state.editId = id;
+                    dom.editName.value = data.name;
+                    const dt = new Date(data.time);
+                    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000);
+                    dom.editTime.value = local.toISOString().slice(0, 16);
+                    dom.modal.style.display = 'flex';
+                })
+                .catch(err => alert('获取任务失败: ' + err.message));
+        }
+
+        function saveEdit() {
+            if (state.editId === null) return;
+            const newName = dom.editName.value.trim();
+            const newTime = dom.editTime.value;
+            if (!newName) return alert('名称不能为空');
+            if (!newTime) return alert('请选择时间');
+            const ts = new Date(newTime).getTime();
+            if (isNaN(ts)) return alert('时间无效');
+            fetchSupabase('/tasks?id=eq.' + state.editId, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ name: newName, time: ts })
+                })
+                .then(() => {
+                    closeModal();
+                    loadTasks(false);
+                })
+                .catch(err => alert('更新失败: ' + err.message));
+        }
+
+        function closeModal() {
+            dom.modal.style.display = 'none';
+            state.editId = null;
+        }
+
+        // ============================================================
+        // 11. 图片上传
+        // ============================================================
+        function uploadImg(id) {
+            state.currentImgId = id;
+            dom.file.click();
+        }
+        dom.file.addEventListener('change', async function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                alert('请选择图片文件');
+                dom.file.value = '';
+                return;
+            }
+            try {
+                const compressedBlob = await compressImage(file, 800, 0.7);
+                const fileName = `${state.currentImgId}.jpg`;
+                const uploadRes = await fetch(SUPABASE_URL + '/storage/v1/object/task-images/' + fileName, {
+                    method: 'PUT',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+                        'Content-Type': 'image/jpeg',
+                        'x-upsert': 'true'
+                    },
+                    body: compressedBlob
+                });
+                if (!uploadRes.ok) {
+                    const errText = await uploadRes.text();
+                    throw new Error('上传图片失败: ' + errText);
+                }
+                const publicUrl = SUPABASE_URL + '/storage/v1/object/public/task-images/' + fileName + '?v=' + Date.now();
+                await fetchSupabase('/tasks?id=eq.' + state.currentImgId, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ image_url: publicUrl })
+                });
+                dom.file.value = '';
+                await loadTasks(false);
+            } catch (err) {
+                alert('图片上传失败: ' + err.message);
+                dom.file.value = '';
             }
         });
-        state.sortableInstances.push(sortable);
-    });
-}
 
-// ============================================================
-// 14. 轮询（静默刷新）
-// ============================================================
-function startPolling() {
-    setInterval(() => {
-        if (!document.hidden) {
-            loadTasks(true);
+        function compressImage(file, maxSize, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let w = img.width,
+                            h = img.height;
+                        if (w > h) {
+                            if (w > maxSize) { h *= maxSize / w;
+                                w = maxSize; }
+                        } else {
+                            if (h > maxSize) { w *= maxSize / h;
+                                h = maxSize; }
+                        }
+                        canvas.width = Math.round(w);
+                        canvas.height = Math.round(h);
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        canvas.toBlob((blob) => {
+                            if (blob) resolve(blob);
+                            else reject(new Error('压缩失败'));
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
         }
-    }, 3000);
-}
 
-// ============================================================
-// 15. 初始化
-// ============================================================
-async function init() {
-    requestNotificationPermission();
-    await loadTasks(false);
-    startPolling();
-    const defaultTime = new Date(Date.now() + 7200000);
-    const localDefault = new Date(defaultTime.getTime() - defaultTime.getTimezoneOffset() * 60000);
-    dom.time.value = localDefault.toISOString().slice(0, 16);
-    dom.modal.addEventListener('click', function(e) {
-        if (e.target === dom.modal) closeModal();
-    });
-}
-init().catch(console.error);
+        // ============================================================
+        // 12. 通知 & 自动逾期移动
+        // ============================================================
+        function requestNotificationPermission() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
 
-// 暴露全局函数
-window.addTask = addTask;
-window.deleteTask = deleteTask;
-window.openEdit = openEdit;
-window.saveEdit = saveEdit;
-window.closeModal = closeModal;
-window.uploadImg = uploadImg;
-window.loadTasks = loadTasks;
-window.openImageModal = openImageModal;
-window.closeImageModal = closeImageModal;
-window.toggleCollapse = toggleCollapse;
-</script>
+        function checkAndNotify() {
+            if (!('Notification' in window)) return;
+            if (Notification.permission !== 'granted') return;
+            const now = Date.now();
+            state.cachedTasks.forEach(task => {
+                if (task.status === 'archived' || task.status === 'shipping' || task.status === 'done') return;
+                const diff = task.time - now;
+                if (diff > 0 && diff < 21600000) {
+                    if (!state.notifiedTasks.has(task.id)) {
+                        state.notifiedTasks.add(task.id);
+                        new Notification('⏰ 任务即将到期', {
+                            body: `任务 "${task.name}" 剩余时间不足6小时！`,
+                            icon: task.image_url || undefined
+                        });
+                    }
+                }
+                if (diff <= 0 || task.status === 'done') {
+                    state.notifiedTasks.delete(task.id);
+                }
+            });
+        }
+
+        async function autoMoveExpiredTasks() {
+            try {
+                const now = Date.now();
+                let hasChanges = false;
+                const tasksToMove = state.cachedTasks.filter(task => {
+                    if (task.status === 'archived' || task.status === 'done' || task.status === 'shipping')
+                        return false;
+                    return task.time - now <= 0;
+                });
+
+                if (tasksToMove.length > 0) {
+                    console.log(`🔍 发现 ${tasksToMove.length} 个任务已超时，即将移动到“已逾期”...`);
+                }
+
+                for (const task of tasksToMove) {
+                    console.log(`⏳ 移动任务: "${task.name}" (ID: ${task.id})`);
+                    await updateTaskStatus(task.id, 'done');
+                    console.log(`✅ 任务 "${task.name}" 已逾期`);
+                    hasChanges = true;
+                    state.notifiedTasks.delete(task.id);
+                }
+
+                if (hasChanges) {
+                    await loadTasks(false);
+                    console.log('🔄 界面已刷新，逾期任务已进入“已逾期”列');
+                }
+            } catch (err) {
+                console.error('❌ 自动逾期移动失败:', err);
+            }
+        }
+
+        // ============================================================
+        // 13. 每秒更新计时器
+        // ============================================================
+        setInterval(async () => {
+            if (state.cachedTasks.length > 0) {
+                const now = Date.now();
+                document.querySelectorAll('.task').forEach(el => {
+                    const id = parseInt(el.dataset.id);
+                    const task = state.cachedTasks.find(t => t.id === id);
+                    if (!task) return;
+
+                    const timerSpan = el.querySelector('.timer');
+                    if (!timerSpan) return;
+                    if (task.status === 'archived') return;
+
+                    const diff = task.time - now;
+                    const isCollapsed = el.querySelector('.task-collapsed') !== null;
+
+                    if (task.status === 'done') {
+                        if (isCollapsed) {
+                            const diffMs = Date.now() - (task.completed_at || Date.now());
+                            timerSpan.textContent = formatTimeShort(diffMs, 'done');
+                        } else {
+                            timerSpan.textContent = formatCompletedTime(task.completed_at, '❗ 已逾期');
+                        }
+                        timerSpan.className = 'timer timer-red';
+                    } else if (task.status === 'shipping') {
+                        if (isCollapsed) {
+                            const diffMs = Date.now() - (task.shipping_at || Date.now());
+                            timerSpan.textContent = formatTimeShort(diffMs, 'shipping');
+                        } else {
+                            timerSpan.textContent = formatCompletedTime(task.shipping_at, '📦 已打包完成');
+                        }
+                        timerSpan.className = 'timer timer-green';
+                    } else {
+                        if (isCollapsed) {
+                            timerSpan.textContent = formatTimeShort(diff, 'countdown');
+                        } else {
+                            timerSpan.textContent = formatTimeLeft(diff);
+                        }
+                        timerSpan.className = `timer ${getTimerColor(diff)}`;
+                    }
+                });
+            }
+            await autoMoveExpiredTasks();
+            checkAndNotify();
+        }, 1000);
+
+        // ============================================================
+        // 14. 拖拽排序
+        // ============================================================
+        function initSortable() {
+            state.sortableInstances.forEach(inst => inst.destroy());
+            state.sortableInstances = [];
+            const cols = [dom.todo, dom.doing, dom.done, dom.shipping, dom.archived];
+            cols.forEach(col => {
+                const sortable = new Sortable(col, {
+                    group: 'tasks',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    dragClass: 'sortable-drag',
+                    onEnd: async function(evt) {
+                        const taskId = parseInt(evt.item.dataset.id);
+                        const fromId = evt.from.id;
+                        const targetId = evt.to.id;
+
+                        if (fromId === 'archived' && targetId !== 'archived') {
+                            alert('已归档的任务不能移出，只能留在归档中。');
+                            await loadTasks(false);
+                            return;
+                        }
+
+                        let newStatus;
+                        if (targetId === 'todo') newStatus = 'todo';
+                        else if (targetId === 'doing') newStatus = 'doing';
+                        else if (targetId === 'done') newStatus = 'done';
+                        else if (targetId === 'shipping') newStatus = 'shipping';
+                        else if (targetId === 'archived') newStatus = 'archived';
+                        else return;
+
+                        const task = state.cachedTasks.find(t => t.id === taskId);
+                        if (task) {
+                            task.status = newStatus;
+                            if (newStatus === 'done') {
+                                task.completed_at = Date.now();
+                                task.shipping_at = null;
+                            } else if (newStatus === 'shipping') {
+                                task.shipping_at = Date.now();
+                                task.completed_at = null;
+                            } else {
+                                task.completed_at = null;
+                                task.shipping_at = null;
+                            }
+                            renderTasks(state.cachedTasks);
+                        }
+
+                        try {
+                            await updateTaskStatus(taskId, newStatus);
+                        } catch (err) {
+                            console.error('拖拽保存失败:', err);
+                            alert('保存状态失败，已回退。错误: ' + err.message);
+                            await loadTasks(false);
+                        }
+                    }
+                });
+                state.sortableInstances.push(sortable);
+            });
+        }
+
+        // ============================================================
+        // 15. 轮询（静默刷新）
+        // ============================================================
+        function startPolling() {
+            setInterval(() => {
+                if (!document.hidden) {
+                    loadTasks(true);
+                }
+            }, 3000);
+        }
+
+        // ============================================================
+        // 16. 初始化
+        // ============================================================
+        async function init() {
+            requestNotificationPermission();
+            await loadTasks(false);
+            startPolling();
+            const defaultTime = new Date(Date.now() + 7200000);
+            const localDefault = new Date(defaultTime.getTime() - defaultTime.getTimezoneOffset() * 60000);
+            dom.time.value = localDefault.toISOString().slice(0, 16);
+            dom.modal.addEventListener('click', function(e) {
+                if (e.target === dom.modal) closeModal();
+            });
+        }
+        init().catch(console.error);
+
+        // 暴露全局函数
+        window.addTask = addTask;
+        window.deleteTask = deleteTask;
+        window.openEdit = openEdit;
+        window.saveEdit = saveEdit;
+        window.closeModal = closeModal;
+        window.uploadImg = uploadImg;
+        window.loadTasks = loadTasks;
+        window.openImageModal = openImageModal;
+        window.closeImageModal = closeImageModal;
+        window.toggleCollapse = toggleCollapse;
+        window.openCreateOrder = openCreateOrder;
+        window.saveOrder = saveOrder;
+        window.viewOrders = viewOrders;
+        window.toggleEditOrder = toggleEditOrder;
+        window.closeOrderModal = closeOrderModal;
+        window.closeViewOrderModal = closeViewOrderModal;
+    </script>
 </body>
 </html>
