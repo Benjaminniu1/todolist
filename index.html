@@ -7,7 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js">
     </script>
     <style>
-        /* 全局样式保持不变 */
         * {
             box-sizing: border-box;
         }
@@ -277,7 +276,6 @@
             color: #166534;
         }
 
-        /* 模态框通用 */
         .modal {
             position: fixed;
             top: 0;
@@ -292,7 +290,7 @@
             z-index: 999;
         }
         .modal-box {
-            width: 600px;
+            width: 700px;
             max-width: 95%;
             max-height: 90vh;
             overflow-y: auto;
@@ -356,7 +354,6 @@
             background: #e2e8f0;
         }
 
-        /* 查看订单列表 - 内联编辑样式 */
         .order-list .order-item {
             border-bottom: 1px solid #eee;
             padding: 10px 0;
@@ -472,6 +469,58 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* 尺寸-数量行样式 */
+        .size-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .size-row input[type="text"] {
+            flex: 2;
+            padding: 8px 12px;
+            border-radius: 30px;
+            border: 1px solid #d2ddee;
+            font-size: 0.9rem;
+        }
+        .size-row input[type="number"] {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 30px;
+            border: 1px solid #d2ddee;
+            font-size: 0.9rem;
+        }
+        .size-row button {
+            padding: 4px 10px;
+            border-radius: 30px;
+            border: 1px solid #ccc;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+        .size-row button:hover {
+            background: #f0f0f0;
+        }
+        .add-size-btn {
+            margin-top: 4px;
+            background: #eef2f7;
+            border: 1px dashed #aaa;
+            padding: 4px 12px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .add-size-btn:hover {
+            background: #dce4ed;
+        }
+        .size-container label {
+            display: block;
+            font-size: 0.8rem;
+            color: #555;
+            margin-bottom: 2px;
+        }
     </style>
 </head>
 <body>
@@ -516,7 +565,7 @@
         </div>
     </div>
 
-    <!-- 创建订单弹窗 -->
+    <!-- 创建订单弹窗（尺寸+数量动态） -->
     <div id="orderModal" class="modal">
         <div class="modal-box">
             <h3 id="orderModalTitle">📝 创建订单</h3>
@@ -525,8 +574,18 @@
                 <input id="orderNumber" placeholder="订单编号" required />
                 <input id="orderProduct" placeholder="产品名" required />
                 <div class="form-row">
-                    <input id="orderSize" placeholder="尺寸" />
-                    <input id="orderQuantity" placeholder="数量" type="number" />
+                    <div class="size-container" id="sizeContainer">
+                        <label>尺寸与数量</label>
+                        <div id="sizeInputs">
+                            <!-- 由JS动态渲染 -->
+                        </div>
+                        <button type="button" class="add-size-btn" onclick="addSizeRow()">➕ 添加尺寸</button>
+                    </div>
+                    <div style="flex:0 0 1px;"></div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="display:block;font-size:0.8rem;color:#555;">总数量（可选）</label>
+                        <input id="orderQuantity" placeholder="总数量" type="number" />
+                    </div>
                 </div>
                 <div class="form-row">
                     <input id="orderTotal" placeholder="总金额" type="number" step="0.01" />
@@ -610,13 +669,13 @@
             orderCustomer: document.getElementById('orderCustomer'),
             orderNumber: document.getElementById('orderNumber'),
             orderProduct: document.getElementById('orderProduct'),
-            orderSize: document.getElementById('orderSize'),
             orderQuantity: document.getElementById('orderQuantity'),
             orderTotal: document.getElementById('orderTotal'),
             orderFreight: document.getElementById('orderFreight'),
             orderRemarks: document.getElementById('orderRemarks'),
             orderModalTitle: document.getElementById('orderModalTitle'),
             orderModalSubmitBtn: document.getElementById('orderModalSubmitBtn'),
+            sizeInputs: document.getElementById('sizeInputs'),
         };
 
         // ============================================================
@@ -796,7 +855,6 @@
             });
         }
 
-        // ---- 新增删除订单 ----
         async function deleteOrderFromDB(orderId) {
             await fetchSupabase('/orders?id=eq.' + orderId, {
                 method: 'DELETE'
@@ -931,7 +989,90 @@
         };
 
         // ============================================================
-        // 8. 订单相关操作（创建、查看、内联编辑、删除）
+        // 8. 尺寸-数量动态添加功能
+        // ============================================================
+        function addSizeRow(sizeVal = '', qtyVal = '') {
+            const container = dom.sizeInputs;
+            const row = document.createElement('div');
+            row.className = 'size-row';
+            row.innerHTML = `
+                <input type="text" class="size-input" placeholder="尺寸" value="${safe(sizeVal)}" />
+                <input type="number" class="qty-input" placeholder="数量" value="${safe(qtyVal)}" />
+                <button type="button" onclick="removeSizeRow(this)" style="background:#f8f8f8;border:1px solid #ddd;color:#888;">−</button>
+            `;
+            container.appendChild(row);
+            // 自动聚焦新尺寸输入框
+            const inp = row.querySelector('.size-input');
+            if (inp) setTimeout(() => inp.focus(), 50);
+        }
+
+        function removeSizeRow(btn) {
+            const row = btn.closest('.size-row');
+            if (document.querySelectorAll('.size-row').length <= 1) {
+                alert('至少保留一个尺寸-数量行');
+                return;
+            }
+            row.remove();
+        }
+
+        function resetSizeInputs(rowsData) {
+            const container = dom.sizeInputs;
+            container.innerHTML = '';
+            if (rowsData && rowsData.length > 0) {
+                rowsData.forEach(row => {
+                    addSizeRow(row.size, row.qty);
+                });
+            } else {
+                // 默认一行空
+                addSizeRow('', '');
+            }
+        }
+
+        // 获取所有尺寸-数量组合，返回数组 [{size, qty}]
+        function getSizeQuantityPairs() {
+            const rows = document.querySelectorAll('#sizeInputs .size-row');
+            const pairs = [];
+            rows.forEach(row => {
+                const sizeInput = row.querySelector('.size-input');
+                const qtyInput = row.querySelector('.qty-input');
+                const size = sizeInput ? sizeInput.value.trim() : '';
+                const qty = qtyInput ? qtyInput.value.trim() : '';
+                if (size || qty) {
+                    pairs.push({ size, qty });
+                }
+            });
+            return pairs;
+        }
+
+        // 将尺寸-数量对转换为存储字符串，格式 "尺寸1:数量1,尺寸2:数量2"
+        function encodeSizeQuantity(pairs) {
+            return pairs.map(p => {
+                if (p.size && p.qty) return `${p.size}:${p.qty}`;
+                if (p.size) return p.size; // 兼容只有尺寸
+                if (p.qty) return `:${p.qty}`; // 只有数量（少见）
+                return '';
+            }).filter(s => s).join(',');
+        }
+
+        // 将存储的字符串解析为 [{size, qty}]
+        function decodeSizeQuantity(str) {
+            if (!str) return [{ size: '', qty: '' }];
+            const parts = str.split(',').filter(s => s.trim());
+            if (parts.length === 0) return [{ size: '', qty: '' }];
+            return parts.map(part => {
+                const trimmed = part.trim();
+                if (trimmed.includes(':')) {
+                    const [size, qty] = trimmed.split(':').map(s => s.trim());
+                    return { size: size || '', qty: qty || '' };
+                } else {
+                    // 只有尺寸，没有数量
+                    return { size: trimmed, qty: '' };
+                }
+            });
+        }
+
+        // ============================================================
+        // 9. 订单相关操作（创建、查看、内联编辑、删除）
         // ============================================================
 
         window.openCreateOrder = function(taskId) {
@@ -939,7 +1080,7 @@
             dom.orderCustomer.value = '';
             dom.orderNumber.value = '';
             dom.orderProduct.value = '';
-            dom.orderSize.value = '';
+            resetSizeInputs(); // 重置为空行
             dom.orderQuantity.value = '';
             dom.orderTotal.value = '';
             dom.orderFreight.value = '';
@@ -960,12 +1101,15 @@
                 return alert('请至少填写客户名、订单编号和产品名！');
             }
 
+            const pairs = getSizeQuantityPairs();
+            const sizeStr = encodeSizeQuantity(pairs);
+
             const data = {
                 customerName,
                 orderNumber,
                 productName,
-                size: dom.orderSize.value.trim(),
-                quantity: dom.orderQuantity.value.trim(),
+                size: sizeStr,
+                quantity: dom.orderQuantity.value.trim() || null,
                 totalAmount: dom.orderTotal.value.trim(),
                 freight: dom.orderFreight.value.trim(),
                 remarks: dom.orderRemarks.value.trim(),
@@ -989,7 +1133,7 @@
             state.currentOrderTaskId = null;
         }
 
-        // ---- 查看订单（内联编辑，无复制按钮，增加删除） ----
+        // ---- 查看订单（内联编辑） ----
         window.viewOrders = async function(taskId) {
             try {
                 const orders = await fetchOrders(taskId);
@@ -1005,12 +1149,31 @@
                 } else {
                     let html = '';
                     orders.forEach((o, idx) => {
+                        // 解析尺寸数据为可读格式
+                        let sizeDisplay = o.size || '';
+                        let sizePairs = [];
+                        if (sizeDisplay) {
+                            sizePairs = decodeSizeQuantity(sizeDisplay);
+                        }
+                        let sizeHtml = '';
+                        if (sizePairs.length > 0 && !(sizePairs.length === 1 && sizePairs[0].size === '' &&
+                                sizePairs[0].qty === '')) {
+                            sizeHtml = sizePairs.map(p => {
+                                if (p.size && p.qty) return `${p.size}（${p.qty}）`;
+                                if (p.size) return p.size;
+                                if (p.qty) return `数量:${p.qty}`;
+                                return '';
+                            }).filter(s => s).join('、');
+                        } else {
+                            sizeHtml = '无';
+                        }
+
                         const fields = [
                             { label: '客户名', field: 'customer_name', value: o.customer_name || '' },
                             { label: '订单编号', field: 'order_number', value: o.order_number || '' },
                             { label: '产品名', field: 'product_name', value: o.product_name || '' },
-                            { label: '尺寸', field: 'size', value: o.size || '' },
-                            { label: '数量', field: 'quantity', value: o.quantity || '' },
+                            { label: '尺寸与数量', field: 'size', value: sizeDisplay },
+                            { label: '总数量', field: 'quantity', value: o.quantity || '' },
                             { label: '总金额', field: 'total_amount', value: o.total_amount || '' },
                             { label: '运费', field: 'freight', value: o.freight || '' },
                             { label: '备注', field: 'remarks', value: o.remarks || '', isTextarea: true },
@@ -1020,14 +1183,17 @@
                         html += `<strong>订单 #${idx+1}</strong> <span style="color:#999;font-size:0.8rem;">${new Date(o.created_at).toLocaleString()}</span><br>`;
 
                         fields.forEach(f => {
-                            const escaped = safe(f.value);
+                            let displayValue = f.value;
+                            if (f.field === 'size') {
+                                displayValue = sizeHtml; // 显示解析后的可读格式
+                            }
+                            const escaped = safe(displayValue);
                             const inputTag = f.isTextarea ?
                                 `<textarea class="order-textarea" data-field="${f.field}" disabled>${escaped}</textarea>` :
                                 `<input class="order-input" data-field="${f.field}" value="${escaped}" disabled />`;
                             html += `<strong>${f.label}：</strong> ${inputTag}<br>`;
                         });
 
-                        // 操作按钮：修改、删除
                         html += `<div style="display:flex;gap:8px;margin-top:4px;">`;
                         html +=
                             `<button class="edit-toggle-btn" style="color:#8b5cf6;border-color:#8b5cf6;" onclick="toggleEditOrder(${o.id})">修改</button>`;
@@ -1051,25 +1217,35 @@
             if (!item) return;
             const inputs = item.querySelectorAll('.order-input, .order-textarea');
             const btn = item.querySelector('.edit-toggle-btn');
-            // btn 是修改按钮，可能有多个，但第一个就是修改按钮
             const isEditing = btn.textContent === '保存';
 
             if (isEditing) {
-                // 保存
-                const data = {
-                    customerName: item.querySelector('[data-field="customer_name"]').value,
-                    orderNumber: item.querySelector('[data-field="order_number"]').value,
-                    productName: item.querySelector('[data-field="product_name"]').value,
-                    size: item.querySelector('[data-field="size"]').value,
-                    quantity: item.querySelector('[data-field="quantity"]').value,
-                    totalAmount: item.querySelector('[data-field="total_amount"]').value,
-                    freight: item.querySelector('[data-field="freight"]').value,
-                    remarks: item.querySelector('[data-field="remarks"]').value,
-                };
-                if (!data.customerName || !data.orderNumber || !data.productName) {
+                // 收集数据
+                const customerName = item.querySelector('[data-field="customer_name"]').value;
+                const orderNumber = item.querySelector('[data-field="order_number"]').value;
+                const productName = item.querySelector('[data-field="product_name"]').value;
+                const sizeRaw = item.querySelector('[data-field="size"]').value;
+                const quantity = item.querySelector('[data-field="quantity"]').value;
+                const totalAmount = item.querySelector('[data-field="total_amount"]').value;
+                const freight = item.querySelector('[data-field="freight"]').value;
+                const remarks = item.querySelector('[data-field="remarks"]').value;
+
+                if (!customerName || !orderNumber || !productName) {
                     alert('客户名、订单编号、产品名不能为空！');
                     return;
                 }
+
+                const data = {
+                    customerName,
+                    orderNumber,
+                    productName,
+                    size: sizeRaw,
+                    quantity: quantity,
+                    totalAmount: totalAmount,
+                    freight: freight,
+                    remarks: remarks,
+                };
+
                 updateOrder(orderId, data).then(() => {
                     inputs.forEach(inp => inp.disabled = true);
                     btn.textContent = '修改';
@@ -1085,6 +1261,8 @@
                         cached.remarks = data.remarks;
                     }
                     alert('✅ 订单更新成功！');
+                    // 刷新显示（更新size的可读展示）
+                    viewOrders(state._currentViewTaskId);
                 }).catch(err => {
                     alert('❌ 更新失败：' + err.message);
                 });
@@ -1102,9 +1280,7 @@
             if (!confirm('确定要删除该订单吗？此操作不可撤销。')) return;
             try {
                 await deleteOrderFromDB(orderId);
-                // 从缓存中移除
                 state._orderCache = state._orderCache.filter(o => o.id !== orderId);
-                // 刷新列表
                 if (state._currentViewTaskId) {
                     await viewOrders(state._currentViewTaskId);
                 }
@@ -1129,7 +1305,7 @@
         });
 
         // ============================================================
-        // 9. 加载任务
+        // 10. 加载任务
         // ============================================================
         async function loadTasks(silent = false) {
             try {
@@ -1160,7 +1336,7 @@
         }
 
         // ============================================================
-        // 10. 任务增删改
+        // 11. 任务增删改
         // ============================================================
         function addTask() {
             const name = dom.name.value.trim();
@@ -1244,7 +1420,7 @@
         }
 
         // ============================================================
-        // 11. 图片上传
+        // 12. 图片上传
         // ============================================================
         function uploadImg(id) {
             state.currentImgId = id;
@@ -1322,7 +1498,7 @@
         }
 
         // ============================================================
-        // 12. 通知 & 自动逾期移动
+        // 13. 通知 & 自动逾期移动
         // ============================================================
         function requestNotificationPermission() {
             if ('Notification' in window && Notification.permission === 'default') {
@@ -1384,7 +1560,7 @@
         }
 
         // ============================================================
-        // 13. 每秒更新计时器
+        // 14. 每秒更新计时器
         // ============================================================
         setInterval(async () => {
             if (state.cachedTasks.length > 0) {
@@ -1432,7 +1608,7 @@
         }, 1000);
 
         // ============================================================
-        // 14. 拖拽排序
+        // 15. 拖拽排序
         // ============================================================
         function initSortable() {
             state.sortableInstances.forEach(inst => inst.destroy());
@@ -1493,7 +1669,7 @@
         }
 
         // ============================================================
-        // 15. 轮询（静默刷新）
+        // 16. 轮询（静默刷新）
         // ============================================================
         function startPolling() {
             setInterval(() => {
@@ -1504,7 +1680,7 @@
         }
 
         // ============================================================
-        // 16. 初始化
+        // 17. 初始化
         // ============================================================
         async function init() {
             requestNotificationPermission();
@@ -1516,6 +1692,8 @@
             dom.modal.addEventListener('click', function(e) {
                 if (e.target === dom.modal) closeModal();
             });
+            // 初始化尺寸输入
+            resetSizeInputs();
         }
         init().catch(console.error);
 
@@ -1537,6 +1715,8 @@
         window.deleteOrder = deleteOrder;
         window.closeOrderModal = closeOrderModal;
         window.closeViewOrderModal = closeViewOrderModal;
+        window.addSizeRow = addSizeRow;
+        window.removeSizeRow = removeSizeRow;
     </script>
 </body>
 </html>
