@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板 · 订单管理</title>
+    <title>博远跟单看板</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js">
     </script>
     <style>
@@ -521,6 +521,35 @@
             color: #555;
             margin-bottom: 2px;
         }
+
+        /* 任务展开右上角时间样式 */
+        .task-time-info {
+            font-size: 0.65rem;
+            color: #666;
+            text-align: right;
+            line-height: 1.4;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        /* 编辑弹窗时间标签样式 */
+        .time-group {
+            flex: 1;
+            min-width: 150px;
+        }
+        .time-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: #555;
+            margin-bottom: 2px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -539,7 +568,8 @@
         </div>
         <div class="row">
             <input id="name" placeholder="任务名称" />
-            <input id="time" type="datetime-local" />
+            <input id="orderTime" type="datetime-local" placeholder="H6下单时间" />
+            <input id="deadline" type="datetime-local" placeholder="交期" />
             <button onclick="addTask()">➕ 新增</button>
             <input type="file" id="file" accept="image/*" hidden />
         </div>
@@ -552,12 +582,21 @@
         </div>
     </div>
 
-    <!-- 编辑任务弹窗 -->
+    <!-- 编辑任务弹窗 - 已增加标签 -->
     <div id="modal" class="modal">
         <div class="modal-box">
             <h3>✏️ 编辑任务</h3>
             <input id="editName" placeholder="任务名称" />
-            <input id="editTime" type="datetime-local" />
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
+                <div class="time-group">
+                    <label for="editOrderTime">H6下单时间</label>
+                    <input id="editOrderTime" type="datetime-local" />
+                </div>
+                <div class="time-group">
+                    <label for="editDeadline">交期</label>
+                    <input id="editDeadline" type="datetime-local" />
+                </div>
+            </div>
             <div class="modal-btns">
                 <button onclick="saveEdit()" class="primary">保存</button>
                 <button onclick="closeModal()" class="secondary">取消</button>
@@ -565,7 +604,7 @@
         </div>
     </div>
 
-    <!-- 创建订单弹窗（尺寸+数量动态） -->
+    <!-- 创建订单弹窗 -->
     <div id="orderModal" class="modal">
         <div class="modal-box">
             <h3 id="orderModalTitle">📝 创建订单</h3>
@@ -576,9 +615,7 @@
                 <div class="form-row">
                     <div class="size-container" id="sizeContainer">
                         <label>尺寸与数量</label>
-                        <div id="sizeInputs">
-                            <!-- 由JS动态渲染 -->
-                        </div>
+                        <div id="sizeInputs"></div>
                         <button type="button" class="add-size-btn" onclick="addSizeRow()">➕ 添加尺寸</button>
                     </div>
                     <div style="flex:0 0 1px;"></div>
@@ -647,11 +684,13 @@
             shipping: document.getElementById('shipping'),
             archived: document.getElementById('archived'),
             name: document.getElementById('name'),
-            time: document.getElementById('time'),
+            orderTime: document.getElementById('orderTime'),
+            deadline: document.getElementById('deadline'),
             file: document.getElementById('file'),
             modal: document.getElementById('modal'),
             editName: document.getElementById('editName'),
-            editTime: document.getElementById('editTime'),
+            editOrderTime: document.getElementById('editOrderTime'),
+            editDeadline: document.getElementById('editDeadline'),
             status: document.getElementById('statusBadge'),
             imageModal: document.getElementById('imageModal'),
             previewImage: document.getElementById('previewImage'),
@@ -768,6 +807,24 @@
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        function formatTimeDisplay(date) {
+            if (!date) return '';
+            const d = new Date(date);
+            if (isNaN(d)) return '';
+            const pad = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function getTaskOrderTime(task) {
+            if (task.h6_order_time) {
+                return new Date(task.h6_order_time);
+            }
+            const idStr = String(task.id);
+            const ts = parseInt(idStr.slice(0, 13));
+            if (!isNaN(ts)) return new Date(ts);
+            return null;
+        }
+
         // ============================================================
         // 5. 大图模态框
         // ============================================================
@@ -862,7 +919,7 @@
         }
 
         // ============================================================
-        // 7. 渲染任务（折叠时隐藏订单按钮）
+        // 7. 渲染任务
         // ============================================================
         function renderTasks(tasks) {
             dom.todo.innerHTML = '<h3>📌 待办</h3>';
@@ -924,7 +981,6 @@
                     timerClass = getTimerColor(diff);
                 }
 
-                // 订单按钮（仅在展开时显示）
                 const orderBtnsHtml = `
                     <button class="order-btn" onclick="openCreateOrder(${task.id})">📝 创建订单</button>
                     <button class="order-btn" onclick="viewOrders(${task.id})">📋 查看订单</button>
@@ -947,11 +1003,17 @@
                         </div>
                     `;
                 } else {
+                    const orderTime = getTaskOrderTime(task);
+                    const orderTimeStr = orderTime ? formatTimeDisplay(orderTime) : '未设置';
+                    const deadlineStr = formatTimeDisplay(task.time);
+
                     const imgHtml = task.image_url ?
                         `<img class="img" src="${task.image_url}" onclick="openImageModal('${task.image_url}')" title="点击查看大图" />` :
                         `<div style="font-size:0.7rem; color:#7d9ab5;">📷 无图片</div>`;
+
                     const titleHtml = `<div class="title">${task.name}</div>`;
                     const timerHtml = `<span class="timer ${timerClass}">${timerText}</span>`;
+
                     const actionsHtml = `
                         <div class="actions">
                             <button onclick="uploadImg(${task.id})">🖼️ 图片</button>
@@ -961,10 +1023,17 @@
                             <button class="toggle-btn" onclick="toggleCollapse(${task.id})" style="background:transparent;border:none;cursor:pointer;color:#888;">▼</button>
                         </div>
                     `;
+
                     div.innerHTML = `
                         <div class="task-expanded">
+                            <div class="task-header">
+                                ${titleHtml}
+                                <div class="task-time-info">
+                                    <div>H6下单: ${orderTimeStr}</div>
+                                    <div>交期: ${deadlineStr}</div>
+                                </div>
+                            </div>
                             ${imgHtml}
-                            ${titleHtml}
                             ${timerHtml}
                             ${actionsHtml}
                         </div>
@@ -989,7 +1058,7 @@
         };
 
         // ============================================================
-        // 8. 尺寸-数量动态添加功能
+        // 8. 尺寸-数量动态添加
         // ============================================================
         function addSizeRow(sizeVal = '', qtyVal = '') {
             const container = dom.sizeInputs;
@@ -1001,7 +1070,6 @@
                 <button type="button" onclick="removeSizeRow(this)" style="background:#f8f8f8;border:1px solid #ddd;color:#888;">−</button>
             `;
             container.appendChild(row);
-            // 自动聚焦新尺寸输入框
             const inp = row.querySelector('.size-input');
             if (inp) setTimeout(() => inp.focus(), 50);
         }
@@ -1023,12 +1091,10 @@
                     addSizeRow(row.size, row.qty);
                 });
             } else {
-                // 默认一行空
                 addSizeRow('', '');
             }
         }
 
-        // 获取所有尺寸-数量组合，返回数组 [{size, qty}]
         function getSizeQuantityPairs() {
             const rows = document.querySelectorAll('#sizeInputs .size-row');
             const pairs = [];
@@ -1044,17 +1110,15 @@
             return pairs;
         }
 
-        // 将尺寸-数量对转换为存储字符串，格式 "尺寸1:数量1,尺寸2:数量2"
         function encodeSizeQuantity(pairs) {
             return pairs.map(p => {
                 if (p.size && p.qty) return `${p.size}:${p.qty}`;
-                if (p.size) return p.size; // 兼容只有尺寸
-                if (p.qty) return `:${p.qty}`; // 只有数量（少见）
+                if (p.size) return p.size;
+                if (p.qty) return `:${p.qty}`;
                 return '';
             }).filter(s => s).join(',');
         }
 
-        // 将存储的字符串解析为 [{size, qty}]
         function decodeSizeQuantity(str) {
             if (!str) return [{ size: '', qty: '' }];
             const parts = str.split(',').filter(s => s.trim());
@@ -1065,14 +1129,13 @@
                     const [size, qty] = trimmed.split(':').map(s => s.trim());
                     return { size: size || '', qty: qty || '' };
                 } else {
-                    // 只有尺寸，没有数量
                     return { size: trimmed, qty: '' };
                 }
             });
         }
 
         // ============================================================
-        // 9. 订单相关操作（创建、查看、内联编辑、删除）
+        // 9. 订单相关操作
         // ============================================================
 
         window.openCreateOrder = function(taskId) {
@@ -1080,7 +1143,7 @@
             dom.orderCustomer.value = '';
             dom.orderNumber.value = '';
             dom.orderProduct.value = '';
-            resetSizeInputs(); // 重置为空行
+            resetSizeInputs();
             dom.orderQuantity.value = '';
             dom.orderTotal.value = '';
             dom.orderFreight.value = '';
@@ -1133,7 +1196,6 @@
             state.currentOrderTaskId = null;
         }
 
-        // ---- 查看订单（内联编辑） ----
         window.viewOrders = async function(taskId) {
             try {
                 const orders = await fetchOrders(taskId);
@@ -1149,7 +1211,6 @@
                 } else {
                     let html = '';
                     orders.forEach((o, idx) => {
-                        // 解析尺寸数据为可读格式
                         let sizeDisplay = o.size || '';
                         let sizePairs = [];
                         if (sizeDisplay) {
@@ -1185,7 +1246,7 @@
                         fields.forEach(f => {
                             let displayValue = f.value;
                             if (f.field === 'size') {
-                                displayValue = sizeHtml; // 显示解析后的可读格式
+                                displayValue = sizeHtml;
                             }
                             const escaped = safe(displayValue);
                             const inputTag = f.isTextarea ?
@@ -1211,7 +1272,6 @@
             }
         };
 
-        // ---- 切换订单编辑状态 ----
         window.toggleEditOrder = function(orderId) {
             const item = document.querySelector(`.order-item[data-order-id="${orderId}"]`);
             if (!item) return;
@@ -1220,7 +1280,6 @@
             const isEditing = btn.textContent === '保存';
 
             if (isEditing) {
-                // 收集数据
                 const customerName = item.querySelector('[data-field="customer_name"]').value;
                 const orderNumber = item.querySelector('[data-field="order_number"]').value;
                 const productName = item.querySelector('[data-field="product_name"]').value;
@@ -1261,13 +1320,11 @@
                         cached.remarks = data.remarks;
                     }
                     alert('✅ 订单更新成功！');
-                    // 刷新显示（更新size的可读展示）
                     viewOrders(state._currentViewTaskId);
                 }).catch(err => {
                     alert('❌ 更新失败：' + err.message);
                 });
             } else {
-                // 启用编辑
                 inputs.forEach(inp => inp.disabled = false);
                 btn.textContent = '保存';
                 const firstInput = item.querySelector('.order-input, .order-textarea');
@@ -1275,7 +1332,6 @@
             }
         };
 
-        // ---- 删除订单 ----
         window.deleteOrder = async function(orderId) {
             if (!confirm('确定要删除该订单吗？此操作不可撤销。')) return;
             try {
@@ -1291,7 +1347,6 @@
             }
         };
 
-        // ---- 关闭查看订单弹窗 ----
         function closeViewOrderModal() {
             dom.viewOrderModal.style.display = 'none';
             state._currentViewTaskId = null;
@@ -1305,62 +1360,45 @@
         });
 
         // ============================================================
-        // 10. 加载任务
-        // ============================================================
-        async function loadTasks(silent = false) {
-            try {
-                if (!silent || state.isFirstLoad) {
-                    dom.status.textContent = '⏳ 加载中...';
-                }
-                const res = await fetchSupabase('/tasks?select=*&order=time.asc');
-                const data = await res.json();
-                state.cachedTasks = data || [];
-                state.cachedTasks.forEach(task => {
-                    if (state.collapsedMap[task.id] === undefined) {
-                        state.collapsedMap[task.id] = true;
-                    }
-                });
-                renderTasks(state.cachedTasks);
-                if (!silent || state.isFirstLoad) {
-                    dom.status.textContent = '✅ 已同步';
-                    dom.status.style.background = '#dcfce7';
-                    state.isFirstLoad = false;
-                }
-                checkAndNotify();
-            } catch (err) {
-                console.error('加载失败:', err);
-                dom.status.textContent = '❌ 连接失败';
-                dom.status.style.background = '#fee2e2';
-                if (!silent) alert('无法连接 Supabase，请检查网络或配置。');
-            }
-        }
-
-        // ============================================================
-        // 11. 任务增删改
+        // 10. 任务增删改（含 H6下单时间）
         // ============================================================
         function addTask() {
             const name = dom.name.value.trim();
-            const timeVal = dom.time.value;
+            const orderTimeVal = dom.orderTime.value;
+            const deadlineVal = dom.deadline.value;
+
             if (!name) return alert('请输入任务名称');
-            if (!timeVal) return alert('请选择截止时间');
-            const timestamp = new Date(timeVal).getTime();
-            if (isNaN(timestamp)) return alert('时间格式无效');
+            if (!deadlineVal) return alert('请选择交期');
+            const deadlineTs = new Date(deadlineVal).getTime();
+            if (isNaN(deadlineTs)) return alert('交期格式无效');
+
+            let orderTimeTs = null;
+            if (orderTimeVal) {
+                orderTimeTs = new Date(orderTimeVal).getTime();
+                if (isNaN(orderTimeTs)) return alert('下单时间格式无效');
+            } else {
+                orderTimeTs = Date.now();
+            }
+
             const newTask = {
                 id: Date.now() + Math.floor(Math.random() * 1000),
                 name,
-                time: timestamp,
+                time: deadlineTs,
+                h6_order_time: orderTimeTs,
                 status: 'todo',
                 image_url: null,
                 completed_at: null,
                 shipping_at: null,
             };
+
             fetchSupabase('/tasks', {
                     method: 'POST',
                     body: JSON.stringify([newTask])
                 })
                 .then(() => {
                     dom.name.value = '';
-                    dom.time.value = '';
+                    dom.orderTime.value = '';
+                    dom.deadline.value = '';
                     state.collapsedMap[newTask.id] = true;
                     loadTasks(false);
                 })
@@ -1387,9 +1425,19 @@
                     if (!data) throw new Error('任务不存在');
                     state.editId = id;
                     dom.editName.value = data.name;
+
                     const dt = new Date(data.time);
-                    const local = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000);
-                    dom.editTime.value = local.toISOString().slice(0, 16);
+                    const localDeadline = new Date(dt.getTime() - dt.getTimezoneOffset() * 60000);
+                    dom.editDeadline.value = localDeadline.toISOString().slice(0, 16);
+
+                    if (data.h6_order_time) {
+                        const dt2 = new Date(data.h6_order_time);
+                        const localOrder = new Date(dt2.getTime() - dt2.getTimezoneOffset() * 60000);
+                        dom.editOrderTime.value = localOrder.toISOString().slice(0, 16);
+                    } else {
+                        dom.editOrderTime.value = '';
+                    }
+
                     dom.modal.style.display = 'flex';
                 })
                 .catch(err => alert('获取任务失败: ' + err.message));
@@ -1398,14 +1446,29 @@
         function saveEdit() {
             if (state.editId === null) return;
             const newName = dom.editName.value.trim();
-            const newTime = dom.editTime.value;
+            const newDeadline = dom.editDeadline.value;
+            const newOrderTime = dom.editOrderTime.value;
+
             if (!newName) return alert('名称不能为空');
-            if (!newTime) return alert('请选择时间');
-            const ts = new Date(newTime).getTime();
-            if (isNaN(ts)) return alert('时间无效');
+            if (!newDeadline) return alert('请选择交期');
+            const deadlineTs = new Date(newDeadline).getTime();
+            if (isNaN(deadlineTs)) return alert('交期无效');
+
+            let orderTimeTs = null;
+            if (newOrderTime) {
+                orderTimeTs = new Date(newOrderTime).getTime();
+                if (isNaN(orderTimeTs)) return alert('下单时间无效');
+            }
+
+            const updateData = {
+                name: newName,
+                time: deadlineTs,
+                h6_order_time: orderTimeTs,
+            };
+
             fetchSupabase('/tasks?id=eq.' + state.editId, {
                     method: 'PATCH',
-                    body: JSON.stringify({ name: newName, time: ts })
+                    body: JSON.stringify(updateData)
                 })
                 .then(() => {
                     closeModal();
@@ -1420,7 +1483,7 @@
         }
 
         // ============================================================
-        // 12. 图片上传
+        // 11. 图片上传
         // ============================================================
         function uploadImg(id) {
             state.currentImgId = id;
@@ -1498,7 +1561,7 @@
         }
 
         // ============================================================
-        // 13. 通知 & 自动逾期移动
+        // 12. 通知 & 自动逾期移动
         // ============================================================
         function requestNotificationPermission() {
             if ('Notification' in window && Notification.permission === 'default') {
@@ -1560,7 +1623,7 @@
         }
 
         // ============================================================
-        // 14. 每秒更新计时器
+        // 13. 每秒更新计时器
         // ============================================================
         setInterval(async () => {
             if (state.cachedTasks.length > 0) {
@@ -1608,7 +1671,7 @@
         }, 1000);
 
         // ============================================================
-        // 15. 拖拽排序
+        // 14. 拖拽排序
         // ============================================================
         function initSortable() {
             state.sortableInstances.forEach(inst => inst.destroy());
@@ -1669,7 +1732,7 @@
         }
 
         // ============================================================
-        // 16. 轮询（静默刷新）
+        // 15. 轮询（静默刷新）
         // ============================================================
         function startPolling() {
             setInterval(() => {
@@ -1680,19 +1743,58 @@
         }
 
         // ============================================================
+        // 16. 加载任务
+        // ============================================================
+        async function loadTasks(silent = false) {
+            try {
+                if (!silent || state.isFirstLoad) {
+                    dom.status.textContent = '⏳ 加载中...';
+                }
+                const res = await fetchSupabase('/tasks?select=*&order=time.asc');
+                const data = await res.json();
+                state.cachedTasks = data || [];
+                state.cachedTasks.forEach(task => {
+                    if (state.collapsedMap[task.id] === undefined) {
+                        state.collapsedMap[task.id] = true;
+                    }
+                    if (task.h6_order_time === undefined || task.h6_order_time === null) {
+                        const idStr = String(task.id);
+                        const ts = parseInt(idStr.slice(0, 13));
+                        if (!isNaN(ts)) task.h6_order_time = ts;
+                    }
+                });
+                renderTasks(state.cachedTasks);
+                if (!silent || state.isFirstLoad) {
+                    dom.status.textContent = '✅ 已同步';
+                    dom.status.style.background = '#dcfce7';
+                    state.isFirstLoad = false;
+                }
+                checkAndNotify();
+            } catch (err) {
+                console.error('加载失败:', err);
+                dom.status.textContent = '❌ 连接失败';
+                dom.status.style.background = '#fee2e2';
+                if (!silent) alert('无法连接 Supabase，请检查网络或配置。');
+            }
+        }
+
+        // ============================================================
         // 17. 初始化
         // ============================================================
         async function init() {
             requestNotificationPermission();
             await loadTasks(false);
             startPolling();
-            const defaultTime = new Date(Date.now() + 7200000);
-            const localDefault = new Date(defaultTime.getTime() - defaultTime.getTimezoneOffset() * 60000);
-            dom.time.value = localDefault.toISOString().slice(0, 16);
+            const now = new Date();
+            const localNow = new Date(now.getTime() - now.getTimezoneOffset() * 60000);
+            dom.orderTime.value = localNow.toISOString().slice(0, 16);
+            const defaultDeadline = new Date(now.getTime() + 7200000);
+            const localDeadline = new Date(defaultDeadline.getTime() - defaultDeadline.getTimezoneOffset() * 60000);
+            dom.deadline.value = localDeadline.toISOString().slice(0, 16);
+
             dom.modal.addEventListener('click', function(e) {
                 if (e.target === dom.modal) closeModal();
             });
-            // 初始化尺寸输入
             resetSizeInputs();
         }
         init().catch(console.error);
