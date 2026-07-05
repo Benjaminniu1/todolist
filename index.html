@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>博远跟单看板</title>
+    <title>博远跟单看板 · 订单管理</title>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js">
     </script>
     <style>
@@ -198,6 +198,20 @@
         }
         .task-collapsed .toggle-btn:hover {
             color: #333;
+        }
+        /* 订单数量徽章 */
+        .order-badge {
+            background: #dbeafe;
+            color: #1d4ed8;
+            border-radius: 12px;
+            padding: 0 6px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            flex-shrink: 0;
+            line-height: 18px;
+            white-space: nowrap;
+            margin-left: 2px;
+            border: 1px solid #b0c4de;
         }
         .task-expanded {
             display: flex;
@@ -582,7 +596,7 @@
         </div>
     </div>
 
-    <!-- 编辑任务弹窗 - 已增加标签 -->
+    <!-- 编辑任务弹窗 -->
     <div id="modal" class="modal">
         <div class="modal-box">
             <h3>✏️ 编辑任务</h3>
@@ -875,6 +889,21 @@
             return await res.json();
         }
 
+        // 批量获取任务订单数量
+        async function fetchOrderCounts(taskIds) {
+            if (!taskIds || taskIds.length === 0) return {};
+            const ids = taskIds.join(',');
+            // 获取所有相关订单的 task_id
+            const res = await fetchSupabase(`/orders?select=task_id&task_id=in.(${ids})`);
+            const orders = await res.json();
+            const countMap = {};
+            orders.forEach(o => {
+                const tid = o.task_id;
+                countMap[tid] = (countMap[tid] || 0) + 1;
+            });
+            return countMap;
+        }
+
         async function createOrder(taskId, data) {
             const newOrder = {
                 id: Date.now() + Math.floor(Math.random() * 1000),
@@ -919,7 +948,7 @@
         }
 
         // ============================================================
-        // 7. 渲染任务
+        // 7. 渲染任务（含订单数量徽章）
         // ============================================================
         function renderTasks(tasks) {
             dom.todo.innerHTML = '<h3>📌 待办</h3>';
@@ -981,10 +1010,15 @@
                     timerClass = getTimerColor(diff);
                 }
 
+                // 订单按钮（仅在展开时显示）
                 const orderBtnsHtml = `
                     <button class="order-btn" onclick="openCreateOrder(${task.id})">📝 创建订单</button>
                     <button class="order-btn" onclick="viewOrders(${task.id})">📋 查看订单</button>
                 `;
+
+                // 订单数量徽章
+                const orderCount = task.order_count || 0;
+                const badgeHtml = orderCount > 0 ? `<span class="order-badge">📋 ${orderCount}</span>` : '';
 
                 if (isCollapsed) {
                     const imgHtml = task.image_url ?
@@ -998,11 +1032,13 @@
                         <div class="task-collapsed">
                             ${imgHtml}
                             ${titleHtml}
+                            ${badgeHtml}
                             ${timerHtml}
                             ${toggleHtml}
                         </div>
                     `;
                 } else {
+                    // 展开状态：显示订单时间和交期
                     const orderTime = getTaskOrderTime(task);
                     const orderTimeStr = orderTime ? formatTimeDisplay(orderTime) : '未设置';
                     const deadlineStr = formatTimeDisplay(task.time);
@@ -1182,6 +1218,8 @@
                 await createOrder(taskId, data);
                 alert('✅ 订单创建成功！');
                 closeOrderModal();
+                // 刷新看板以更新订单数量
+                await loadTasks(false);
                 if (state._currentViewTaskId && state._currentViewTaskId === taskId) {
                     await viewOrders(taskId);
                 }
@@ -1337,6 +1375,8 @@
             try {
                 await deleteOrderFromDB(orderId);
                 state._orderCache = state._orderCache.filter(o => o.id !== orderId);
+                // 刷新看板以更新订单数量
+                await loadTasks(false);
                 if (state._currentViewTaskId) {
                     await viewOrders(state._currentViewTaskId);
                 }
@@ -1743,7 +1783,7 @@
         }
 
         // ============================================================
-        // 16. 加载任务
+        // 16. 加载任务（含订单数量）
         // ============================================================
         async function loadTasks(silent = false) {
             try {
@@ -1753,7 +1793,12 @@
                 const res = await fetchSupabase('/tasks?select=*&order=time.asc');
                 const data = await res.json();
                 state.cachedTasks = data || [];
+
+                // 获取订单数量
+                const taskIds = state.cachedTasks.map(t => t.id);
+                const countMap = await fetchOrderCounts(taskIds);
                 state.cachedTasks.forEach(task => {
+                    task.order_count = countMap[task.id] || 0;
                     if (state.collapsedMap[task.id] === undefined) {
                         state.collapsedMap[task.id] = true;
                     }
@@ -1763,6 +1808,7 @@
                         if (!isNaN(ts)) task.h6_order_time = ts;
                     }
                 });
+
                 renderTasks(state.cachedTasks);
                 if (!silent || state.isFirstLoad) {
                     dom.status.textContent = '✅ 已同步';
